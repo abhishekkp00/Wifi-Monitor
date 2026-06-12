@@ -2,8 +2,6 @@
 
 A Linux-based command-line tool to automate Wi-Fi network testing. It measures latency, packet loss, and throughput using standard Linux networking tools (`ping`, `iperf3`), stores results in SQLite, and generates summaries to help you compare network quality across different setups, locations, and time periods.
 
-Built as part of a placement preparation project aligned with network testing and automation engineering roles.
-
 ***
 
 ## Why This Project Exists
@@ -15,7 +13,7 @@ Most people check their Wi-Fi quality by eyeballing a speed test or doing a quic
 - Whether your connection degrades at certain hours
 - What the actual packet loss and jitter look like under load
 
-This tool automates all of that. You run one command, results get logged, and you can query summaries whenever you want. It's a simplified version of what professional network test platforms like LANforge do — just without the enterprise price tag.
+This tool automates all of that. You run one command, results get logged, and you can query summaries whenever you want. It's a simplified version of what professional network test platforms like LANforge do - just without the enterprise price tag.
 
 ***
 
@@ -92,7 +90,7 @@ wifi-monitor/
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/wifi-monitor.git
+git clone https://github.com/abhishekkp00/wifi-monitor.git
 cd wifi-monitor
 
 # Create a virtual environment
@@ -327,16 +325,3 @@ These are planned for the next few days of development:
 - `tcpdump` packet capture for debugging is planned for Day 8.
 
 ***
-
-## Git History
-
-```
-Day 1 — Project structure + argparse skeleton with all subcommands
-Day 2 — ping_test module + regex parser + unit tests + utils
-```
-
-***
-
-## License
-
-MIT License. Free to use, modify, and distribute.
