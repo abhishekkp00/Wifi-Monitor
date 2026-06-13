@@ -1,42 +1,13 @@
-"""
-ping_test.py
-------------
-Runs the Linux `ping` command via subprocess and parses:
-  - packets sent
-  - packets received
-  - packet loss %
-  - RTT min / avg / max / mdev
-
-Returns a structured dict ready to be stored in SQLite.
-"""
+"""Ping latency test module."""
 
 import subprocess
 import re
 from datetime import datetime
 
 
-# ─────────────────────────────────────────────
-# Core runner
-# ─────────────────────────────────────────────
-
 def run_ping(host: str, count: int = 10) -> dict:
-    """
-    Run `ping -c <count> <host>` and return parsed metrics.
-
-    Args:
-        host  : IP address or hostname to ping (e.g. "8.8.8.8")
-        count : number of ICMP packets to send (default: 10)
-
-    Returns:
-        dict with keys:
-            test_type, host, timestamp,
-            packets_sent, packets_received, packet_loss_pct,
-            rtt_min_ms, rtt_avg_ms, rtt_max_ms, rtt_mdev_ms,
-            raw_output, error
-    """
+    """Run ping and return parsed metrics."""
     result = _build_empty_result(host)
-
-    # Build command
     cmd = ["ping", "-c", str(count), host]
 
     try:
@@ -44,7 +15,7 @@ def run_ping(host: str, count: int = 10) -> dict:
             cmd,
             capture_output=True,
             text=True,
-            timeout=count + 10          # generous timeout
+            timeout=count + 10
         )
 
         result["raw_output"] = proc.stdout + proc.stderr
@@ -53,36 +24,20 @@ def run_ping(host: str, count: int = 10) -> dict:
             result["error"] = f"ping command failed (return code {proc.returncode})"
             return result
 
-        # Parse output
         _parse_ping_output(proc.stdout, result)
 
     except subprocess.TimeoutExpired:
         result["error"] = f"ping timed out after {count + 10} seconds"
-
     except FileNotFoundError:
         result["error"] = "ping command not found. Install: sudo apt install iputils-ping"
-
     except Exception as e:
         result["error"] = str(e)
 
     return result
 
 
-# ─────────────────────────────────────────────
-# Parser
-# ─────────────────────────────────────────────
-
 def _parse_ping_output(output: str, result: dict) -> None:
-    """
-    Parse raw ping stdout and fill in the result dict in-place.
-
-    Linux ping summary lines look like:
-      5 packets transmitted, 5 received, 0% packet loss, time 4004ms
-      rtt min/avg/max/mdev = 12.345/15.678/22.901/3.456 ms
-    """
-
-    # ── Packet statistics line ──────────────────
-    # Pattern: "N packets transmitted, N received, N% packet loss"
+    """Parse raw ping stdout and fill result dict."""
     pkt_pattern = re.compile(
         r"(\d+)\s+packets\s+transmitted,\s+"
         r"(\d+)\s+received,\s+"
@@ -94,8 +49,6 @@ def _parse_ping_output(output: str, result: dict) -> None:
         result["packets_received"]  = int(pkt_match.group(2))
         result["packet_loss_pct"]   = float(pkt_match.group(3))
 
-    # ── RTT summary line ────────────────────────
-    # Pattern: "rtt min/avg/max/mdev = 12.3/15.6/22.9/3.4 ms"
     rtt_pattern = re.compile(
         r"rtt\s+min/avg/max/mdev\s*=\s*"
         r"([\d.]+)/([\d.]+)/([\d.]+)/([\d.]+)\s+ms"
@@ -107,10 +60,6 @@ def _parse_ping_output(output: str, result: dict) -> None:
         result["rtt_max_ms"]  = float(rtt_match.group(3))
         result["rtt_mdev_ms"] = float(rtt_match.group(4))
 
-
-# ─────────────────────────────────────────────
-# Helpers
-# ─────────────────────────────────────────────
 
 def _build_empty_result(host: str) -> dict:
     """Return a blank result dict with all expected keys."""
@@ -131,10 +80,7 @@ def _build_empty_result(host: str) -> dict:
 
 
 def format_result(result: dict) -> str:
-    """
-    Return a human-readable CLI string from a ping result dict.
-    Used by main.py to print output to terminal.
-    """
+    """Return a human-readable CLI string from a ping result dict."""
     lines = []
     lines.append("=" * 48)
     lines.append(f"  Ping Test — {result['host']}")

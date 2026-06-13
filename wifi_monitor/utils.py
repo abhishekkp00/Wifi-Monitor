@@ -4,50 +4,65 @@ utils.py
 Shared helper utilities used across modules.
 """
 
+"""
+Shared utility functions used across all modules.
+Keep this file simple — no business logic here.
+"""
+
 import shutil
-import sys
+import datetime
 
 
-def check_command_available(cmd: str) -> bool:
+def is_tool_installed(tool_name: str) -> bool:
     """
-    Return True if a shell command/binary is available on this system.
+    Check if a CLI tool is available on PATH.
+    Uses shutil.which() — same as `which ping` in bash.
 
     Example:
-        check_command_available("ping")   -> True / False
-        check_command_available("iperf3") -> True / False
+        is_tool_installed("iperf3")  -> True or False
+        is_tool_installed("tcpdump") -> True or False
     """
-    return shutil.which(cmd) is not None
+    return shutil.which(tool_name) is not None
 
 
-def require_command(cmd: str, install_hint: str = "") -> None:
+def format_timestamp() -> str:
     """
-    Exit with a helpful message if a required command is not installed.
-
-    Args:
-        cmd          : command name e.g. "iperf3"
-        install_hint : e.g. "sudo apt install iperf3"
+    Return current UTC time as ISO 8601 string.
+    Example: "2026-06-13T08:30:00.123456"
+    Stored in DB so every result can be sorted chronologically.
     """
-    if not check_command_available(cmd):
-        msg = f"[ERROR] Required command not found: '{cmd}'"
-        if install_hint:
-            msg += f"\n        Install with: {install_hint}"
-        print(msg)
-        sys.exit(1)
+    return datetime.datetime.utcnow().isoformat()
 
 
-def print_separator(char: str = "─", width: int = 48) -> None:
-    """Print a separator line for CLI output."""
-    print(char * width)
-
-
-def format_optional(value, suffix: str = "", na: str = "N/A") -> str:
+def bits_to_mbps(bits_per_second: float) -> float:
     """
-    Safely format a value that might be None.
-
-    Example:
-        format_optional(12.5, " ms")  -> "12.5 ms"
-        format_optional(None)         -> "N/A"
+    Convert bits/sec to Megabits/sec.
+    iperf3 JSON always returns bits_per_second.
+    Divide by 1,000,000 (not 1,048,576) because network
+    bandwidth uses SI units, not binary units.
     """
-    if value is None:
-        return na
-    return f"{value}{suffix}"
+    if bits_per_second is None:
+        return None
+    return round(bits_per_second / 1_000_000, 2)
+
+
+def safe_float(value, default=None):
+    """
+    Safely convert a value to float.
+    Returns default if conversion fails.
+    Prevents crashes when iperf3 returns unexpected types.
+    """
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def safe_int(value, default=None):
+    """
+    Safely convert a value to int.
+    """
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
