@@ -1,106 +1,171 @@
 """
-Storage module for saving and retrieving test results using SQLite.
+storage.py — SQLite persistence layer for wifi-monitor.
+
+All public functions accept an optional `conn` parameter.
+- Production: pass nothing → function creates + closes its own connection.
+- Tests:       pass the fixture connection → function uses it, never closes it.
 """
 
 import sqlite3
-import json
-from datetime import datetime
-from pathlib import Path
+import os
+
+DB_PATH = os.environ.get(
+    "WIFI_MONITOR_DB",
+    os.path.join(os.path.dirname(__file__), "..", "data", "results.db")
+)
 
 
-# Database file location
-DB_PATH = Path(__file__).parent.parent / "data" / "results.db"
+def _open() -> sqlite3.Connection:
+    """Create a new file-based connection (production use)."""
+    os.makedirs(os.path.dirname(os.path.abspath(DB_PATH)), exist_ok=True)
+    c = sqlite3.connect(DB_PATH)
+    c.row_factory = sqlite3.Row
+    return c
 
 
-def init_db():
-    """
-    Initialize the SQLite database with required schema.
-    Creates the database and table if they don't already exist.
-    """
-    # Ensure data directory exists
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+def init_db(conn: sqlite3.Connection = None) -> None:
+    _own = conn is None
+    c = conn or _open()
+    try:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS test_runs (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp           TEXT,
+                test_type           TEXT,
+                status              TEXT DEFAULT 'UNKNOWN',
+                host                TEXT,
+                server              TEXT,
+                interface           TEXT,
+                ssid                TEXT,
+                ip_address          TEXT,
+                local_ip            TEXT,
+                remote_ip           TEXT,
+                protocol            TEXT,
+                duration_seconds    INTEGER,
+                bandwidth_target    TEXT,
+                packets_sent        INTEGER,
+                packets_received    INTEGER,
+                packet_loss_pct     REAL,
+                rtt_min_ms          REAL,
+                rtt_avg_ms          REAL,
+                rtt_max_ms          REAL,
+                rtt_mdev_ms         REAL,
+                throughput_mbps     REAL,
+                jitter_ms           REAL,
+                iperf_version       TEXT,
+                raw_output          TEXT,
+                error               TEXT,
+                notes               TEXT
+            )
+        """)
+        c.commit()
+    finally:
+        if _own:
+            c.close()
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
 
-    # Create results table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS results (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT NOT NULL,
-            test_type TEXT NOT NULL,
-            status TEXT NOT NULL,
-            data TEXT NOT NULL
+def save_result(result: dict, conn: sqlite3.Connection = None) -> int:
+    _own = conn is None
+    c = conn or _open()
+    try:
+        cursor = c.execute(
+            """
+            INSERT INTO test_runs (
+                timestamp, test_type, status,
+                host, server, interface, ssid, ip_address,
+                local_ip, remote_ip,
+                protocol, duration_seconds, bandwidth_target,
+                packets_sent, packets_received, packet_loss_pct,
+                rtt_min_ms, rtt_avg_ms, rtt_max_ms, rtt_mdev_ms,
+                throughput_mbps, jitter_ms,
+                iperf_version, raw_output, error, notes
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """,
+            (
+                result.get("timestamp"),          result.get("test_type"),
+                result.get("status", "UNKNOWN"),
+                result.get("host"),               result.get("server"),
+                result.get("interface"),          result.get("ssid"),
+                result.get("ip_address"),         result.get("local_ip"),
+                result.get("remote_ip"),          result.get("protocol"),
+                result.get("duration_seconds"),   result.get("bandwidth_target"),
+                result.get("packets_sent"),       result.get("packets_received"),
+                result.get("packet_loss_pct"),
+                result.get("rtt_min_ms"),         result.get("rtt_avg_ms"),
+                result.get("rtt_max_ms"),         result.get("rtt_mdev_ms"),
+                result.get("throughput_mbps"),    result.get("jitter_ms"),
+                result.get("iperf_version"),      result.get("raw_output"),
+                result.get("error"),              result.get("notes"),
+            )
         )
-    """)
-
-    conn.commit()
-    conn.close()
-
-
-def save_result(result: dict):
-    """
-    Save a test result to the database.
-    
-    Args:
-        result: Dictionary containing test result data with keys like
-                'status', 'test_type', and other test-specific fields
-    """
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    timestamp = datetime.now().isoformat()
-    test_type = result.get("test_type", "unknown")
-    status = result.get("status", "UNKNOWN")
-    data = json.dumps(result)
-
-    cursor.execute("""
-        INSERT INTO results (timestamp, test_type, status, data)
-        VALUES (?, ?, ?, ?)
-    """, (timestamp, test_type, status, data))
-
-    conn.commit()
-    conn.close()
+        c.commit()
+        return cursor.lastrowid
+    finally:
+        if _own:
+            c.close()
 
 
-def get_results(limit: int = 10, test_type: str = "all") -> list:
-    """
-    Retrieve recent test results from the database.
-    
-    Args:
-        limit: Maximum number of results to retrieve
-        test_type: Filter by test type ('ping', 'throughput', or 'all')
-    
-    Returns:
-        List of result dictionaries
-    """
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
+def fetch_recent(limit: int = 20, test_type: str = None,
+                 conn: sqlite3.Connection = None) -> list:
+    _own = conn is None
+    c = conn or _open()
+    try:
+        if test_type:
+            rows = c.execute(
+                "SELECT * FROM test_runs WHERE test_type=? ORDER BY id DESC LIMIT ?",
+                (test_type, limit)
+            ).fetchall()
+        else:
+            rows = c.execute(
+                "SELECT * FROM test_runs ORDER BY id DESC LIMIT ?",
+                (limit,)
+            ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        if _own:
+            c.close()
 
-    if test_type == "all":
-        cursor.execute("""
-            SELECT timestamp, test_type, status, data
-            FROM results
-            ORDER BY timestamp DESC
-            LIMIT ?
-        """, (limit,))
-    else:
-        cursor.execute("""
-            SELECT timestamp, test_type, status, data
-            FROM results
-            WHERE test_type = ?
-            ORDER BY timestamp DESC
-            LIMIT ?
-        """, (test_type, limit))
 
-    rows = cursor.fetchall()
-    conn.close()
+def count_rows(conn: sqlite3.Connection = None) -> int:
+    _own = conn is None
+    c = conn or _open()
+    try:
+        return c.execute("SELECT COUNT(*) FROM test_runs").fetchone()[0]
+    finally:
+        if _own:
+            c.close()
 
-    results = []
-    for row in rows:
-        timestamp, test_type, status, data = row
-        result_dict = json.loads(data)
-        result_dict["timestamp"] = timestamp
-        results.append(result_dict)
 
-    return results
+def clear_all(confirm: bool = False, conn: sqlite3.Connection = None) -> None:
+    if not confirm:
+        raise ValueError("Pass confirm=True to clear all data.")
+    _own = conn is None
+    c = conn or _open()
+    try:
+        c.execute("DELETE FROM test_runs")
+        c.commit()
+    finally:
+        if _own:
+            c.close()
+
+
+def get_ping_stats(conn: sqlite3.Connection = None) -> dict | None:
+    _own = conn is None
+    c = conn or _open()
+    try:
+        row = c.execute("""
+            SELECT
+                ROUND(AVG(rtt_avg_ms), 3)      AS avg_rtt,
+                ROUND(MIN(rtt_min_ms), 3)      AS min_rtt,
+                ROUND(MAX(rtt_max_ms), 3)      AS max_rtt,
+                ROUND(AVG(packet_loss_pct), 2) AS avg_loss,
+                COUNT(*)                        AS total_runs
+            FROM test_runs
+            WHERE test_type = 'ping' AND status = 'SUCCESS'
+        """).fetchone()
+        if row and row["total_runs"] and row["total_runs"] > 0:
+            return dict(row)
+        return None
+    finally:
+        if _own:
+            c.close()

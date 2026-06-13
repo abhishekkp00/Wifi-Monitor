@@ -5,7 +5,7 @@ Run with: python -m wifi_monitor.main <command> [options]
 
 import argparse
 import sys
-from wifi_monitor.ping_test import run_ping
+from wifi_monitor.ping_test import run_ping_test
 from wifi_monitor.throughput_test import run_tcp_test, run_udp_test
 from wifi_monitor.storage import init_db, save_result
 from wifi_monitor.report import print_summary
@@ -89,7 +89,7 @@ Examples:
 def handle_ping(args):
     """Run ping test, save result, print summary."""
     print(f"\n[ping] Testing latency to {args.host} ({args.count} packets)...")
-    result = run_ping(host=args.host, count=args.count)
+    result = run_ping_test(host=args.host, count=args.count)
     save_result(result)
 
     if result["status"] == "SUCCESS":

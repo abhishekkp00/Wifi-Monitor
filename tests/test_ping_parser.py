@@ -1,116 +1,143 @@
-"""
-tests/test_ping_parser.py
---------------------------
-Unit tests for ping_test._parse_ping_output()
-
-These tests do NOT run the real ping command.
-They test the PARSER with real-looking sample outputs.
-
-Run with:
-    python -m pytest tests/ -v
-    # or without pytest:
-    python tests/test_ping_parser.py
-"""
-
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from wifi_monitor.ping_test import _parse_ping_output, _build_empty_result
+from wifi_monitor.ping_test import _parse_ping_output, _error_result
 
+# ── Sample ping outputs (real Linux ping text) ──────────────
 
-# ─────────────────────────────────────────────
-# Sample outputs (real Linux ping output)
-# ─────────────────────────────────────────────
-
-SAMPLE_SUCCESS = """
-PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
-64 bytes from 8.8.8.8: icmp_seq=1 ttl=116 time=12.4 ms
-64 bytes from 8.8.8.8: icmp_seq=2 ttl=116 time=13.1 ms
-64 bytes from 8.8.8.8: icmp_seq=3 ttl=116 time=11.8 ms
-64 bytes from 8.8.8.8: icmp_seq=4 ttl=116 time=14.2 ms
-64 bytes from 8.8.8.8: icmp_seq=5 ttl=116 time=12.9 ms
+SAMPLE_SUCCESS = """PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=118 time=14.2 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=118 time=12.1 ms
 
 --- 8.8.8.8 ping statistics ---
-5 packets transmitted, 5 received, 0% packet loss, time 4004ms
-rtt min/avg/max/mdev = 11.800/12.880/14.200/0.821 ms
+10 packets transmitted, 10 received, 0% packet loss, time 9010ms
+rtt min/avg/max/mdev = 10.123/14.234/22.701/3.456 ms
 """
 
-SAMPLE_PARTIAL_LOSS = """
-PING 192.168.1.99 (192.168.1.99) 56(84) bytes of data.
-64 bytes from 192.168.1.99: icmp_seq=1 ttl=64 time=1.23 ms
-64 bytes from 192.168.1.99: icmp_seq=3 ttl=64 time=1.45 ms
-
---- 192.168.1.99 ping statistics ---
-5 packets transmitted, 2 received, 60% packet loss, time 4100ms
-rtt min/avg/max/mdev = 1.230/1.340/1.450/0.110 ms
+SAMPLE_PARTIAL_LOSS = """--- 1.1.1.1 ping statistics ---
+10 packets transmitted, 8 received, 20% packet loss, time 9008ms
+rtt min/avg/max/mdev = 11.000/15.000/25.000/4.000 ms
 """
 
-SAMPLE_FULL_LOSS = """
-PING 192.0.2.1 (192.0.2.1) 56(84) bytes of data.
-
---- 192.0.2.1 ping statistics ---
-5 packets transmitted, 0 received, 100% packet loss, time 4000ms
+SAMPLE_FULL_LOSS = """--- 10.0.0.99 ping statistics ---
+5 packets transmitted, 0 received, 100% packet loss, time 4004ms
 """
 
-
-# ─────────────────────────────────────────────
-# Test functions
-# ─────────────────────────────────────────────
-
-def test_successful_ping():
-    result = _build_empty_result("8.8.8.8")
-    _parse_ping_output(SAMPLE_SUCCESS, result)
-
-    assert result["packets_sent"]     == 5,    f"Expected 5, got {result['packets_sent']}"
-    assert result["packets_received"] == 5,    f"Expected 5, got {result['packets_received']}"
-    assert result["packet_loss_pct"]  == 0.0,  f"Expected 0.0, got {result['packet_loss_pct']}"
-    assert result["rtt_min_ms"]       == 11.8, f"Expected 11.8, got {result['rtt_min_ms']}"
-    assert result["rtt_avg_ms"]       == 12.88,f"Expected 12.88, got {result['rtt_avg_ms']}"
-    assert result["rtt_max_ms"]       == 14.2, f"Expected 14.2, got {result['rtt_max_ms']}"
-    print("  [PASS] test_successful_ping")
+SAMPLE_GARBAGE = "bash: ping: command not found"
 
 
-def test_partial_loss():
-    result = _build_empty_result("192.168.1.99")
-    _parse_ping_output(SAMPLE_PARTIAL_LOSS, result)
+class TestPingParserSuccess:
 
-    assert result["packets_sent"]     == 5
-    assert result["packets_received"] == 2
-    assert result["packet_loss_pct"]  == 60.0
-    assert result["rtt_avg_ms"]       == 1.34
-    print("  [PASS] test_partial_loss")
+    def test_status_is_success(self):
+        r = _parse_ping_output(SAMPLE_SUCCESS, "8.8.8.8", 10)
+        assert r["status"] == "SUCCESS"
+
+    def test_packets_sent(self):
+        r = _parse_ping_output(SAMPLE_SUCCESS, "8.8.8.8", 10)
+        assert r["packets_sent"] == 10
+
+    def test_packets_received(self):
+        r = _parse_ping_output(SAMPLE_SUCCESS, "8.8.8.8", 10)
+        assert r["packets_received"] == 10
+
+    def test_packet_loss_zero(self):
+        r = _parse_ping_output(SAMPLE_SUCCESS, "8.8.8.8", 10)
+        assert r["packet_loss_pct"] == 0.0
+
+    def test_rtt_avg_correct(self):
+        r = _parse_ping_output(SAMPLE_SUCCESS, "8.8.8.8", 10)
+        assert r["rtt_avg_ms"] == 14.234
+
+    def test_rtt_min_correct(self):
+        r = _parse_ping_output(SAMPLE_SUCCESS, "8.8.8.8", 10)
+        assert r["rtt_min_ms"] == 10.123
+
+    def test_rtt_max_correct(self):
+        r = _parse_ping_output(SAMPLE_SUCCESS, "8.8.8.8", 10)
+        assert r["rtt_max_ms"] == 22.701
+
+    def test_rtt_mdev_correct(self):
+        r = _parse_ping_output(SAMPLE_SUCCESS, "8.8.8.8", 10)
+        assert r["rtt_mdev_ms"] == 3.456
+
+    def test_host_stored(self):
+        r = _parse_ping_output(SAMPLE_SUCCESS, "8.8.8.8", 10)
+        assert r["host"] == "8.8.8.8"
+
+    def test_test_type_is_ping(self):
+        r = _parse_ping_output(SAMPLE_SUCCESS, "8.8.8.8", 10)
+        assert r["test_type"] == "ping"
+
+    def test_timestamp_present(self):
+        r = _parse_ping_output(SAMPLE_SUCCESS, "8.8.8.8", 10)
+        assert r["timestamp"] is not None
+
+    def test_throughput_is_none_for_ping(self):
+        r = _parse_ping_output(SAMPLE_SUCCESS, "8.8.8.8", 10)
+        assert r["throughput_mbps"] is None
+
+    def test_jitter_is_none_for_ping(self):
+        r = _parse_ping_output(SAMPLE_SUCCESS, "8.8.8.8", 10)
+        assert r["jitter_ms"] is None
 
 
-def test_full_loss():
-    result = _build_empty_result("192.0.2.1")
-    _parse_ping_output(SAMPLE_FULL_LOSS, result)
+class TestPingParserPartialLoss:
 
-    assert result["packets_sent"]     == 5
-    assert result["packets_received"] == 0
-    assert result["packet_loss_pct"]  == 100.0
-    assert result["rtt_min_ms"]       is None   # no RTT line when all packets lost
-    assert result["rtt_avg_ms"]       is None
-    print("  [PASS] test_full_loss")
+    def test_packet_loss_20_percent(self):
+        r = _parse_ping_output(SAMPLE_PARTIAL_LOSS, "1.1.1.1", 10)
+        assert r["packet_loss_pct"] == 20.0
 
+    def test_status_still_success_with_partial_loss(self):
+        # Partial loss is a valid result — not a failure
+        r = _parse_ping_output(SAMPLE_PARTIAL_LOSS, "1.1.1.1", 10)
+        assert r["status"] == "SUCCESS"
 
-def test_empty_output():
-    result = _build_empty_result("bad-host")
-    _parse_ping_output("", result)
-
-    assert result["packets_sent"]    is None
-    assert result["rtt_avg_ms"]      is None
-    print("  [PASS] test_empty_output")
+    def test_packets_received_8(self):
+        r = _parse_ping_output(SAMPLE_PARTIAL_LOSS, "1.1.1.1", 10)
+        assert r["packets_received"] == 8
 
 
-# ─────────────────────────────────────────────
-# Runner (without pytest)
-# ─────────────────────────────────────────────
+class TestPingParserFullLoss:
 
-if __name__ == "__main__":
-    print("\nRunning ping parser unit tests...\n")
-    test_successful_ping()
-    test_partial_loss()
-    test_full_loss()
-    test_empty_output()
-    print("\nAll tests passed! ✅\n")
+    def test_full_loss_status_success(self):
+        # 100% loss is still a parseable result — status = SUCCESS
+        # The loss_pct=100 is the data point, not a tool failure
+        r = _parse_ping_output(SAMPLE_FULL_LOSS, "10.0.0.99", 5)
+        assert r["status"] == "SUCCESS"
+
+    def test_full_loss_rtt_is_none(self):
+        # No RTT line when 100% loss
+        r = _parse_ping_output(SAMPLE_FULL_LOSS, "10.0.0.99", 5)
+        assert r["rtt_avg_ms"] is None
+        assert r["rtt_min_ms"] is None
+        assert r["rtt_max_ms"] is None
+
+    def test_full_loss_pct_is_100(self):
+        r = _parse_ping_output(SAMPLE_FULL_LOSS, "10.0.0.99", 5)
+        assert r["packet_loss_pct"] == 100.0
+
+
+class TestErrorResult:
+
+    def test_error_result_has_failed_status(self):
+        r = _error_result("8.8.8.8", 10, "timeout")
+        assert r["status"] == "FAILED"
+
+    def test_error_result_has_error_message(self):
+        r = _error_result("8.8.8.8", 10, "host unreachable")
+        assert r["error"] == "host unreachable"
+
+    def test_error_result_has_all_required_keys(self):
+        required = [
+            "test_type", "status", "host", "packets_sent",
+            "packet_loss_pct", "rtt_avg_ms", "throughput_mbps",
+            "timestamp", "error", "raw_output"
+        ]
+        r = _error_result("8.8.8.8", 10, "test error")
+        for key in required:
+            assert key in r, f"Missing key: {key}"
+
+    def test_garbage_output_returns_failed(self):
+        r = _parse_ping_output(SAMPLE_GARBAGE, "8.8.8.8", 10)
+        assert r["status"] == "FAILED"
