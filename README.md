@@ -2,8 +2,6 @@
 
 A premium, real-time Wi-Fi and network quality monitoring application. Built with Python, Flask, and Server-Sent Events (SSE), this tool runs local and internet speed tests, stores the results in a local SQLite database, and visualizes everything on a stunning, dynamic dashboard.
 
-![Dashboard Preview](dashboard_preview.png) *(Note: Add a screenshot of the dashboard here!)*
-
 ***
 
 ## What It Does
