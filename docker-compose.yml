@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  wifi-monitor:
+    build: .
+    container_name: wifi-monitor
+    # host network mode is REQUIRED so the container can test the host's actual network,
+    # access local network interfaces, and run pings properly.
+    network_mode: "host"
+    volumes:
+      # Persist the SQLite database across container updates/restarts
+      - ./data:/app/data
+      # Mount DBus socket if you want nmcli to read wireless interfaces on the host (optional)
+      - /var/run/dbus:/var/run/dbus
+    restart: unless-stopped

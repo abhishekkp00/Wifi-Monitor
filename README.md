@@ -2,6 +2,18 @@
 
 A premium, real-time Wi-Fi and network quality monitoring application. Built with Python, Flask, and Server-Sent Events (SSE), this tool runs local and internet speed tests, stores the results in a local SQLite database, and visualizes everything on a stunning, dynamic dashboard.
 
+## Dashboard Preview
+
+### 🖥️ Main Dashboard View
+![Main Dashboard View](images/dashboard_main.png)
+
+### 📊 Recent Test Runs & Historical Stats
+![Recent Test Runs](images/recent_runs.png)
+
+### ⚡ Live Speed Test Modal (Real-time Progress)
+| Starting Speed Test | Completed Speed Test |
+|---|---|
+| ![Speed Test Started](images/speedtest_started.png) | ![Speed Test Completed](images/speedtest_completed.png) |
 ***
 
 ## What It Does
@@ -145,6 +157,58 @@ When you click **"Speed Test"** in the UI:
 - **Speed test fails with `TOOL_NOT_FOUND`:** Ensure you installed dependencies in the active virtual environment (`pip install -r requirements.txt`). The app specifically looks for `speedtest-cli` in the same `bin` directory as the running Python executable.
 - **Wi-Fi SSID shows "Not available":** The app tries to use `nmcli dev wifi` and `nmcli connection show --active`. If your system doesn't use NetworkManager, this feature won't work, but the rest of the dashboard will continue to function normally.
 - **Pings randomly show FAILED or 100% loss:** This is completely normal! It means the app caught a temporary network drop or latency spike. That's exactly what this tool is built to detect.
+
+***
+
+## Deployment
+
+Since this monitor measures local network and Wi-Fi quality, it should be deployed on a local server or always-on device (e.g., a Raspberry Pi, home server, or local Linux machine) rather than a cloud VM.
+
+### Automated Deployment (systemd + Gunicorn)
+
+We have provided a deployment script that automates configuring the application as a background `systemd` service running with `gunicorn`:
+
+1. Make sure you are on your target Linux machine.
+2. Run the deployment script with `sudo`:
+   ```bash
+   sudo ./scripts/deploy.sh
+   ```
+
+This script will:
+- Install all necessary dependencies in the virtual environment.
+- Create a `wifi-monitor.service` configuration file under `/etc/systemd/system/`.
+- Enable the service to run automatically on system boot.
+- Start (or restart) the background service.
+
+### Docker Deployment (Recommended for Easy Setup)
+
+Using Docker is the easiest way for **others to run this on their own local networks** without manually installing system tools and configuring python environments.
+
+1. Install **Docker** and **Docker Compose** on the target machine.
+2. Run the container using Docker Compose:
+   ```bash
+   docker compose up -d --build
+   ```
+
+*Note: The container runs in `network_mode: host` so that it can access and measure the host machine's physical network adapters, routing tables, and Wi-Fi interface details.*
+
+### Managing the Service
+
+Once deployed, you can control the service using standard systemd commands:
+
+```bash
+# Check if the service is running and view recent logs
+sudo systemctl status wifi-monitor
+
+# Restart the service
+sudo systemctl restart wifi-monitor
+
+# Stop the service
+sudo systemctl stop wifi-monitor
+
+# Tail the logs in real-time
+sudo journalctl -u wifi-monitor -f
+```
 
 ***
 

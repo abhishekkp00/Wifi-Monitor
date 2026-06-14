@@ -1,6 +1,42 @@
-/venv
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# Python Cache and Compilations
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .pytest_cache/
-*.db
+.coverage
+htmlcov/
+.eggs/
+*.egg-info/
+
+# Local Configurations & Environments
 .env
+config/local.json
+
+# Database & SQLite State
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Logs
+*.log
+data/logs/
+
+# IDE / Editor configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+.project
+.pydevproject
+
+# System Files
+.DS_Store
+Thumbs.db

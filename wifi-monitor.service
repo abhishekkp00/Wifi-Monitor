@@ -1,0 +1,16 @@
+[Unit]
+Description=Wi-Fi Monitor Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=abhishek
+WorkingDirectory=/home/abhishek/Projects/wifi-monitor
+Environment="PATH=/home/abhishek/Projects/wifi-monitor/venv/bin"
+# Run with 1 worker and 4 threads to allow the background auto-ping loop and SSE stream to work
+ExecStart=/home/abhishek/Projects/wifi-monitor/venv/bin/gunicorn -w 1 --threads 4 -b 0.0.0.0:5000 "dashboard.app:create_app(auto_run=True)"
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
