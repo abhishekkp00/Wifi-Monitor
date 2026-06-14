@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wi-Fi Monitor — Live Network Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#060b14;--surface:#0d1526;--card:#111d35;--card2:#162040;
+  --border:#1c2e50;--text:#e2e8f0;--muted:#64748b;--muted2:#94a3b8;
+  --teal:#06b6d4;--purple:#8b5cf6;--green:#10b981;--yellow:#f59e0b;
+  --red:#ef4444;--blue:#3b82f6;--orange:#f97316;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden}
+
+/* ── animated bg ── */
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% 10%,#06b6d41a 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 80%,#8b5cf61a 0%,transparent 60%);pointer-events:none;z-index:0}
+
+/* ── header ── */
+header{position:sticky;top:0;z-index:100;background:rgba(13,21,38,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 24px;height:58px;display:flex;align-items:center;gap:16px}
+.logo{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700;color:var(--teal);letter-spacing:-.3px}
+.logo-icon{font-size:22px}
+.live-pill{display:flex;align-items:center;gap:6px;background:#10b98122;border:1px solid #10b98155;color:var(--green);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.08em}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+.running-pill{background:#f59e0b22;border-color:#f59e0b55;color:var(--yellow)}
+.running-dot{background:var(--yellow);animation:spin-pulse 1s linear infinite}
+@keyframes spin-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.score-badge{display:flex;align-items:center;gap:8px;margin-left:4px}
+.score-ring{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid var(--teal);color:var(--teal)}
+.score-label{font-size:11px;color:var(--muted2);line-height:1.3}
+.score-grade{font-weight:600;font-size:12px}
+
+.hdr-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.btn{padding:7px 16px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;transition:all .2s;display:flex;align-items:center;gap:6px}
+.btn-teal{background:var(--teal);color:#000}.btn-teal:hover{background:#22d3ee}
+.btn-purple{background:var(--purple);color:#fff}.btn-purple:hover{background:#a78bfa}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted2)}.btn-ghost:hover{border-color:var(--teal);color:var(--teal)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-sm{padding:5px 12px;font-size:12px}
+#last-upd{color:var(--muted);font-size:11px;white-space:nowrap}
+
+/* ── main layout ── */
+.main{position:relative;z-index:1;padding:20px 24px;max-width:1440px;margin:0 auto}
+
+/* ── wifi bar ── */
+.wifi-bar{display:flex;align-items:center;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:0;margin-bottom:20px;overflow:hidden}
+.wifi-item{flex:1;padding:12px 20px;border-right:1px solid var(--border)}
+.wifi-item:last-child{border-right:none}
+.wi-label{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.wi-val{font-size:13px;font-weight:500;color:var(--text)}
+.wifi-status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;vertical-align:middle}
+.wifi-na .wifi-status-dot{background:var(--red)}
+
+/* ── kpi grid ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi-card:hover{border-color:#2e4a7a}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--teal)}
+.kpi-card.purple::before{background:var(--purple)}
+.kpi-card.green::before{background:var(--green)}
+.kpi-card.blue::before{background:var(--blue)}
+.kpi-card.yellow::before{background:var(--yellow)}
+.kpi-card.red::before{background:var(--red)}
+.kpi-card.orange::before{background:var(--orange)}
+.kpi-label{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.kpi-value{font-size:28px;font-weight:700;line-height:1;color:var(--text);transition:color .4s}
+.kpi-unit{font-size:11px;color:var(--muted);margin-top:4px}
+.kpi-delta{font-size:11px;margin-top:6px;font-weight:500}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:.02em}
+.badge.EXCELLENT,.badge.GOOD{background:#10b98122;color:var(--green);border:1px solid #10b98144}
+.badge.FAIR,.badge.DEGRADED,.badge.LOW,.badge.HIGH{background:#f59e0b22;color:var(--yellow);border:1px solid #f59e0b44}
+.badge.POOR,.badge.UNKNOWN{background:#ef444422;color:var(--red);border:1px solid #ef444444}
+.badge.NO\ DATA,.badge.NO_DATA{background:var(--card2);color:var(--muted);border:1px solid var(--border)}
+
+/* ── charts ── */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:900px){.charts-grid{grid-template-columns:1fr}}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.chart-title{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.chart-dot{width:8px;height:8px;border-radius:50%}
+canvas{max-height:200px}
+
+/* ── toast notifications ── */
+#toast-wrap{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--text);box-shadow:0 8px 24px #00000055;animation:slide-in .3s ease;max-width:320px}
+.toast.success{border-left:3px solid var(--green)}
+.toast.warn{border-left:3px solid var(--yellow)}
+.toast.error{border-left:3px solid var(--red)}
+@keyframes slide-in{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── recent table ── */
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px}
+.section-title{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{color:var(--muted);text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--muted2)}
+td:first-child,td:nth-child(3),td:nth-child(5){color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--card2)}
+.status-pill{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.pill-ok{background:#10b98122;color:var(--green)}
+.pill-fail{background:#ef444422;color:var(--red)}
+.pill-warn{background:#f59e0b22;color:var(--yellow)}
+
+/* ── footer ── */
+footer{text-align:center;padding:20px;color:var(--muted);font-size:11px;border-top:1px solid var(--border)}
+
+/* ── speed test modal ── */
+.sp-overlay{position:fixed;inset:0;background:rgba(6,11,20,.85);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.sp-overlay.open{opacity:1;pointer-events:all}
+.sp-modal{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px;width:min(640px,95vw);box-shadow:0 32px 80px #00000080;position:relative;overflow:hidden}
+.sp-modal::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--teal),var(--purple))}
+.sp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.sp-title{font-size:16px;font-weight:700;color:var(--text)}
+.sp-close{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:16px;transition:all .2s}
+.sp-close:hover{border-color:var(--red);color:var(--red)}
+.sp-stage{font-size:12px;color:var(--teal);margin-bottom:12px;min-height:18px;letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+.sp-prog-wrap{background:var(--card2);border-radius:99px;height:6px;margin-bottom:28px;overflow:hidden}
+.sp-prog-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--teal),var(--purple));width:0%;transition:width .8s ease}
+.sp-speeds{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.sp-speed-card{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center}
+.sp-speed-icon{font-size:22px;margin-bottom:4px}
+.sp-speed-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px}
+.sp-speed-num{font-size:42px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;line-height:1;min-height:50px;transition:color .4s}
+.sp-speed-num.active-dl{color:var(--teal)}
+.sp-speed-num.active-ul{color:var(--purple)}
+.sp-speed-unit{font-size:12px;color:var(--muted);margin-top:4px}
+.sp-speed-bar{height:4px;border-radius:99px;background:var(--border);margin-top:12px;overflow:hidden}
+.sp-speed-bar-fill{height:100%;border-radius:99px;width:0%;transition:width 1s ease}
+.sp-speed-bar-fill.dl{background:var(--teal)}
+.sp-speed-bar-fill.ul{background:var(--purple)}
+.sp-meta{display:flex;gap:16px;margin-bottom:20px;font-size:12px;color:var(--muted2)}
+.sp-meta span{display:flex;align-items:center;gap:6px}
+.sp-console{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;height:120px;overflow-y:auto;font-family:monospace;font-size:11px;color:var(--muted);line-height:1.6}
+.sp-console p{margin:0;}
+.sp-console p.highlight{color:var(--teal)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="logo-icon">📡</span>Wi-Fi Monitor</div>
+  <div id="live-pill" class="live-pill"><span class="live-dot"></span>LIVE</div>
+  <div class="score-badge">
+    <div class="score-ring" id="score-ring">—</div>
+    <div class="score-label"><div id="score-grade" class="score-grade">—</div><div style="color:var(--muted);font-size:10px">Quality</div></div>
+  </div>
+  <div class="hdr-actions">
+    <button class="btn btn-teal btn-sm" id="btn-ping">⚡ Run Ping</button>
+    <button class="btn btn-purple btn-sm" id="btn-speed">📊 Speed Test</button>
+    <span id="last-upd">—</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Wi-Fi Info -->
+  <div class="wifi-bar" id="wifi-bar">
+    <div class="wifi-item"><div class="wi-label">SSID</div><div class="wi-val"><span class="wifi-status-dot"></span><span id="wi-ssid">—</span></div></div>
+    <div class="wifi-item"><div class="wi-label">Interface</div><div class="wi-val" id="wi-iface">—</div></div>
+    <div class="wifi-item"><div class="wi-label">IP Address</div><div class="wi-val" id="wi-ip">—</div></div>
+    <div class="wifi-item"><div class="wi-label">Gateway</div><div class="wi-val" id="wi-gw">—</div></div>
+    <div class="wifi-item"><div class="wi-label">Total Runs</div><div class="wi-val" id="wi-total">—</div></div>
+    <div class="wifi-item" style="border-right:none"><div class="wi-label">Success Rate</div><div class="wi-val" id="wi-rate">—</div></div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card teal">
+      <div class="kpi-label">Avg RTT</div>
+      <div class="kpi-value" id="kpi-rtt">—</div>
+      <div class="kpi-unit">milliseconds</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Packet Loss</div>
+      <div class="kpi-value" id="kpi-loss">—</div>
+      <div class="kpi-unit">percent</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">Download Speed</div>
+      <div class="kpi-value" id="kpi-tp">—</div>
+      <div class="kpi-unit">Mbps</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Avg Jitter</div>
+      <div class="kpi-value" id="kpi-jitter">—</div>
+      <div class="kpi-unit">ms (UDP)</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Ping Health</div>
+      <div class="kpi-value" id="kpi-ping-health">—</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">Speed Health</div>
+      <div class="kpi-value" id="kpi-tp-health">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Min RTT</div>
+      <div class="kpi-value" id="kpi-rtt-min">—</div>
+      <div class="kpi-unit">milliseconds</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Max RTT</div>
+      <div class="kpi-value" id="kpi-rtt-max">—</div>
+      <div class="kpi-unit">milliseconds</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title"><span class="chart-dot" style="background:var(--teal)"></span>Latency Over Time (ms)</div>
+      <canvas id="rtt-chart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="chart-dot" style="background:var(--red)"></span>Packet Loss (%)</div>
+      <canvas id="loss-chart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="chart-dot" style="background:var(--purple)"></span>Throughput Over Time (Mbps)</div>
+      <canvas id="tp-chart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="chart-dot" style="background:var(--orange)"></span>Jitter Over Time (ms)</div>
+      <canvas id="jitter-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Recent Tests -->
+  <div class="table-card">
+    <div class="section-title">Recent Test Runs</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Time</th><th>Type</th><th>Status</th>
+            <th>Host / Server</th><th>RTT avg</th><th>Loss %</th>
+            <th>Speed (Mbps)</th><th>Protocol</th><th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="recent-tbody"><tr><td colspan="10" style="color:var(--muted);padding:20px">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<div id="toast-wrap"></div>
+
+<!-- Speed Test Modal -->
+<div class="sp-overlay" id="sp-overlay">
+  <div class="sp-modal">
+    <div class="sp-header">
+      <div class="sp-title">📊 Speed Test — Live Results</div>
+      <button class="sp-close" id="sp-close">✕ Close</button>
+    </div>
+    <div class="sp-stage" id="sp-stage">Connecting to speedtest.net…</div>
+    <div class="sp-prog-wrap"><div class="sp-prog-fill" id="sp-prog"></div></div>
+    <div class="sp-speeds">
+      <div class="sp-speed-card">
+        <div class="sp-speed-icon">↓</div>
+        <div class="sp-speed-label">Download</div>
+        <div class="sp-speed-num" id="sp-dl">—</div>
+        <div class="sp-speed-unit">Mbps</div>
+        <div class="sp-speed-bar"><div class="sp-speed-bar-fill dl" id="sp-dl-bar"></div></div>
+      </div>
+      <div class="sp-speed-card">
+        <div class="sp-speed-icon">↑</div>
+        <div class="sp-speed-label">Upload</div>
+        <div class="sp-speed-num" id="sp-ul">—</div>
+        <div class="sp-speed-unit">Mbps</div>
+        <div class="sp-speed-bar"><div class="sp-speed-bar-fill ul" id="sp-ul-bar"></div></div>
+      </div>
+    </div>
+    <div class="sp-meta">
+      <span>🏠 <span id="sp-server">detecting server…</span></span>
+      <span>📡 Ping: <span id="sp-ping">—</span> ms</span>
+    </div>
+    <div class="sp-console" id="sp-console"></div>
+  </div>
+</div>
+
+<footer>Wi-Fi Monitor · Built with Python + Flask · Real-time via SSE</footer>
+
+<script>
+// ── Chart config ──────────────────────────────────────────────────────────────
+const BASE_OPTS = {
+  responsive:true, maintainAspectRatio:true, animation:{duration:600},
+  plugins:{legend:{labels:{color:"#94a3b8",font:{size:11,family:"Inter"},boxWidth:10}}},
+  scales:{
+    x:{ticks:{color:"#64748b",maxTicksLimit:8,font:{size:10}},grid:{color:"#1c2e5088"}},
+    y:{ticks:{color:"#64748b",font:{size:10}},grid:{color:"#1c2e5088"},beginAtZero:false},
+  }
+};
+
+const rttChart = new Chart(document.getElementById("rtt-chart"),{type:"line",data:{labels:[],datasets:[
+  {label:"RTT avg",data:[],borderColor:"#06b6d4",backgroundColor:"#06b6d41a",tension:.35,fill:true,pointRadius:3,pointBackgroundColor:"#06b6d4"},
+  {label:"RTT max",data:[],borderColor:"#f97316",backgroundColor:"transparent",tension:.35,fill:false,pointRadius:2,borderDash:[5,4]},
+]},options:{...BASE_OPTS}});
+
+const lossChart = new Chart(document.getElementById("loss-chart"),{type:"bar",data:{labels:[],datasets:[
+  {label:"Packet Loss %",data:[],backgroundColor:"#ef444466",borderColor:"#ef4444",borderWidth:1,borderRadius:4},
+]},options:{...BASE_OPTS,scales:{...BASE_OPTS.scales,y:{...BASE_OPTS.scales.y,min:0}}}});
+
+const tpChart = new Chart(document.getElementById("tp-chart"),{type:"line",data:{labels:[],datasets:[
+  {label:"Download Mbps",data:[],borderColor:"#8b5cf6",backgroundColor:"#8b5cf622",tension:.35,fill:true,pointRadius:3,pointBackgroundColor:"#8b5cf6"},
+]},options:{...BASE_OPTS}});
+
+const jitterChart = new Chart(document.getElementById("jitter-chart"),{type:"line",data:{labels:[],datasets:[
+  {label:"Jitter ms",data:[],borderColor:"#f97316",backgroundColor:"#f9731611",tension:.35,fill:true,pointRadius:3,pointBackgroundColor:"#f97316"},
+]},options:{...BASE_OPTS}});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmt(v,d=2){return v==null?"—":Number(v).toFixed(d)}
+function badge(h){return `<span class="badge ${(h||"").replace(" ","_")}">${h||"—"}</span>`}
+function statusPill(s){
+  const ok=s==="SUCCESS";
+  const warn=["TOOL_ERROR","TOOL_NOT_FOUND","TIMEOUT","PARSE_ERROR"].includes(s);
+  const cls=ok?"pill-ok":warn?"pill-warn":"pill-fail";
+  return `<span class="status-pill ${cls}">${s}</span>`;
+}
+
+function animateVal(el, newText){
+  el.style.opacity="0";el.style.transform="translateY(6px)";
+  setTimeout(()=>{el.textContent=newText;el.style.transition="all .3s";el.style.opacity="1";el.style.transform="translateY(0)"},150);
+}
+
+function toast(msg, type="success"){
+  const t=document.createElement("div");
+  t.className=`toast ${type}`;t.textContent=msg;
+  document.getElementById("toast-wrap").appendChild(t);
+  setTimeout(()=>t.remove(),4000);
+}
+
+// ── Update functions ──────────────────────────────────────────────────────────
+function updateWifi(w, counts){
+  const avail = w && w.available;
+  document.getElementById("wi-ssid").textContent  = avail ? (w.ssid||"N/A") : "Not available";
+  document.getElementById("wi-iface").textContent = avail ? (w.interface||"N/A") : "—";
+  document.getElementById("wi-ip").textContent    = avail ? (w.ip_address||"N/A") : "—";
+  document.getElementById("wi-gw").textContent    = avail ? (w.gateway||"N/A") : "—";
+  const bar = document.getElementById("wifi-bar");
+  bar.classList.toggle("wifi-na", !avail);
+  if(counts){
+    const total = counts.total||0;
+    const succ  = counts.success_count||0;
+    document.getElementById("wi-total").textContent = total;
+    document.getElementById("wi-rate").textContent  = total ? (succ/total*100).toFixed(1)+"%" : "—";
+  }
+}
+
+function updateKPIs(p, t){
+  animateVal(document.getElementById("kpi-rtt"),     fmt(p.avg_rtt_ms));
+  animateVal(document.getElementById("kpi-loss"),    fmt(p.avg_loss_pct));
+  animateVal(document.getElementById("kpi-tp"),      fmt(t.avg_mbps));
+  animateVal(document.getElementById("kpi-jitter"),  fmt(t.avg_jitter_ms));
+  animateVal(document.getElementById("kpi-rtt-min"), fmt(p.min_rtt_ms));
+  animateVal(document.getElementById("kpi-rtt-max"), fmt(p.max_rtt_ms));
+  document.getElementById("kpi-ping-health").innerHTML = badge(p.health||"NO DATA");
+  document.getElementById("kpi-tp-health").innerHTML   = badge(t.health||"NO DATA");
+}
+
+function updateQuality(q){
+  if(!q) return;
+  const ring = document.getElementById("score-ring");
+  const grade = document.getElementById("score-grade");
+  const colors = {EXCELLENT:"#10b981",GOOD:"#06b6d4",FAIR:"#f59e0b",POOR:"#ef4444"};
+  ring.textContent  = q.score;
+  grade.textContent = q.grade||"—";
+  ring.style.borderColor = colors[q.grade]||"var(--teal)";
+  ring.style.color       = colors[q.grade]||"var(--teal)";
+  grade.style.color      = colors[q.grade]||"var(--muted2)";
+}
+
+function updateCharts(cp, ct){
+  if(cp){
+    rttChart.data.labels = cp.labels;
+    rttChart.data.datasets[0].data = cp.rtt_avg;
+    rttChart.data.datasets[1].data = cp.rtt_max||[];
+    rttChart.update("active");
+    lossChart.data.labels = cp.labels;
+    lossChart.data.datasets[0].data = cp.packet_loss;
+    lossChart.update("active");
+  }
+  if(ct){
+    tpChart.data.labels = ct.labels;
+    tpChart.data.datasets[0].data = ct.throughput;
+    tpChart.update("active");
+    jitterChart.data.labels = ct.labels;
+    jitterChart.data.datasets[0].data = ct.jitter;
+    jitterChart.update("active");
+  }
+}
+
+function updateTable(rows){
+  const tbody = document.getElementById("recent-tbody");
+  if(!rows||!rows.length){
+    tbody.innerHTML=`<tr><td colspan="10" style="color:var(--muted);padding:20px">No data yet. Click ⚡ Run Ping to start.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r=>`
+  <tr>
+    <td>${r.id||"—"}</td>
+    <td>${(r.timestamp||"").replace("T"," ").slice(0,19)}</td>
+    <td style="color:${r.test_type==="ping"?"var(--teal)":"var(--purple)"}">${r.test_type||"—"}</td>
+    <td>${statusPill(r.status)}</td>
+    <td>${r.host||r.server||"—"}</td>
+    <td>${fmt(r.rtt_avg_ms)}</td>
+    <td>${fmt(r.packet_loss_pct)}</td>
+    <td>${fmt(r.throughput_mbps)}</td>
+    <td>${r.protocol||"—"}</td>
+    <td style="color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis">${r.notes||r.error||"—"}</td>
+  </tr>`).join("");
+}
+
+function setRunning(what){
+  const pill = document.getElementById("live-pill");
+  const bp = document.getElementById("btn-ping");
+  const bs = document.getElementById("btn-speed");
+  if(what){
+    pill.className="live-pill running-pill";
+    pill.innerHTML=`<span class="live-dot running-dot"></span>RUNNING ${what.toUpperCase()}`;
+    bp.disabled=true; bs.disabled=true;
+  } else {
+    pill.className="live-pill";
+    pill.innerHTML=`<span class="live-dot"></span>LIVE`;
+    bp.disabled=false; bs.disabled=false;
+  }
+}
+
+// ── SSE real-time stream ──────────────────────────────────────────────────────
+function connectSSE(){
+  const es = new EventSource("/api/stream");
+  es.onmessage = e => {
+    try {
+      const d = JSON.parse(e.data);
+      if(d.error) return;
+      const s = d.summary||{};
+      updateWifi(s.wifi, s.counts);
+      updateKPIs(s.ping||{}, s.throughput||{});
+      updateQuality(s.quality);
+      updateCharts(d.chart_ping, d.chart_throughput);
+      updateTable(d.recent||[]);
+      setRunning(d.running);
+      document.getElementById("last-upd").textContent =
+        "Updated: " + new Date().toLocaleTimeString();
+    } catch(_){}
+  };
+  es.onerror = ()=>{
+    setTimeout(connectSSE, 5000); // reconnect
+    es.close();
+  };
+}
+
+// ── Run-now buttons ───────────────────────────────────────────────────────────
+document.getElementById("btn-ping").addEventListener("click", async ()=>{
+  const r = await fetch("/api/run/ping",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({host:"8.8.8.8",count:10})});
+  const d = await r.json();
+  if(r.ok) toast("⚡ Ping test started — results will appear shortly","success");
+  else toast("⚠ "+d.error,"warn");
+});
+
+// ── Speed test modal logic ───────────────────────────────────────────────────
+let _spES = null;
+
+function openSpeedModal() {
+  const o = document.getElementById("sp-overlay");
+  o.classList.add("open");
+  // reset
+  document.getElementById("sp-stage").textContent = "Connecting to speedtest.net…";
+  document.getElementById("sp-prog").style.width = "5%";
+  document.getElementById("sp-dl").textContent = "—";
+  document.getElementById("sp-ul").textContent = "—";
+  document.getElementById("sp-dl").className = "sp-speed-num";
+  document.getElementById("sp-ul").className = "sp-speed-num";
+  document.getElementById("sp-dl-bar").style.width = "0%";
+  document.getElementById("sp-ul-bar").style.width = "0%";
+  document.getElementById("sp-server").textContent = "detecting server…";
+  document.getElementById("sp-ping").textContent = "—";
+  document.getElementById("sp-console").innerHTML = "";
+}
+
+function closeSpeedModal() {
+  document.getElementById("sp-overlay").classList.remove("open");
+  if (_spES) { _spES.close(); _spES = null; }
+}
+
+function spLog(text, highlight=false) {
+  const c = document.getElementById("sp-console");
+  const p = document.createElement("p");
+  p.textContent = "> " + text;
+  if (highlight) p.classList.add("highlight");
+  c.appendChild(p);
+  c.scrollTop = c.scrollHeight;
+}
+
+function animateCount(elId, targetVal, duration=1200) {
+  const el = document.getElementById(elId);
+  const start = parseFloat(el.textContent) || 0;
+  const startTime = performance.now();
+  function step(now) {
+    const p = Math.min((now - startTime) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = (start + (targetVal - start) * ease).toFixed(2);
+    if (p < 1) requestAnimationFrame(step);
+    else el.textContent = targetVal.toFixed(2);
+  }
+  requestAnimationFrame(step);
+}
+
+document.getElementById("btn-speed").addEventListener("click", () => {
+  openSpeedModal();
+  _spES = new EventSource("/api/run/speedtest/stream");
+
+  _spES.onmessage = e => {
+    const d = JSON.parse(e.data);
+
+    if (d.type === "log") {
+      const isKey = d.text.includes("Download:") || d.text.includes("Upload:") || d.text.includes("Hosted by");
+      spLog(d.text, isKey);
+
+    } else if (d.type === "server") {
+      document.getElementById("sp-server").textContent = d.server || "Unknown";
+      document.getElementById("sp-ping").textContent = d.ping ?? "—";
+      document.getElementById("sp-prog").style.width = "20%";
+      document.getElementById("sp-stage").textContent = "Server selected — starting download test…";
+
+    } else if (d.type === "stage") {
+      if (d.stage === "download") {
+        document.getElementById("sp-stage").textContent = "⬇ Testing download speed…";
+        document.getElementById("sp-prog").style.width = "35%";
+        document.getElementById("sp-dl").classList.add("active-dl");
+      } else if (d.stage === "upload") {
+        document.getElementById("sp-stage").textContent = "⬆ Testing upload speed…";
+        document.getElementById("sp-prog").style.width = "70%";
+        document.getElementById("sp-ul").classList.add("active-ul");
+      }
+
+    } else if (d.type === "download") {
+      animateCount("sp-dl", d.mbps);
+      const pct = Math.min((d.mbps / 200) * 100, 100);
+      document.getElementById("sp-dl-bar").style.width = pct + "%";
+      document.getElementById("sp-prog").style.width = "65%";
+      document.getElementById("sp-stage").textContent = `⬇ Download: ${d.mbps} Mbps — starting upload…`;
+
+    } else if (d.type === "upload") {
+      animateCount("sp-ul", d.mbps);
+      const pct = Math.min((d.mbps / 200) * 100, 100);
+      document.getElementById("sp-ul-bar").style.width = pct + "%";
+      document.getElementById("sp-prog").style.width = "95%";
+      document.getElementById("sp-stage").textContent = `⬆ Upload: ${d.mbps} Mbps — finishing…`;
+
+    } else if (d.type === "done") {
+      document.getElementById("sp-prog").style.width = "100%";
+      document.getElementById("sp-stage").textContent = "✅ Speed test complete!";
+      _spES.close(); _spES = null;
+      toast(`📊 Done — ↓ ${d.dl} Mbps  ↑ ${d.ul} Mbps`, "success");
+
+    } else if (d.type === "error") {
+      spLog("ERROR: " + d.message);
+      document.getElementById("sp-stage").textContent = "❌ " + d.message;
+      _spES.close(); _spES = null;
+    }
+  };
+
+  _spES.onerror = () => {
+    spLog("Connection lost");
+    _spES.close(); _spES = null;
+  };
+});
+
+document.getElementById("sp-close").addEventListener("click", closeSpeedModal);
+document.getElementById("sp-overlay").addEventListener("click", e => {
+  if (e.target === document.getElementById("sp-overlay")) closeSpeedModal();
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+connectSSE();
+</script>
+</body>
+</html>

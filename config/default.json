@@ -1,0 +1,24 @@
+{
+  "ping": {
+    "default_host":     "8.8.8.8",
+    "default_count":    10,
+    "default_interval": 1.0
+  },
+  "throughput": {
+    "default_server":   "192.168.1.10",
+    "default_duration": 10,
+    "default_protocol": "tcp",
+    "default_port":     5201
+  },
+  "thresholds": {
+    "loss_warn_pct":        2.0,
+    "throughput_warn_mbps": 10.0
+  },
+  "export": {
+    "default_limit":  100,
+    "default_format": "csv"
+  },
+  "report": {
+    "default_last": 20
+  }
+}

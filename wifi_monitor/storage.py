@@ -9,6 +9,53 @@ All public functions accept an optional `conn` parameter.
 import sqlite3
 import os
 
+
+def fetch_chart_data(limit: int = 20, test_type: str | None = None, conn: sqlite3.Connection = None) -> list:
+    _own = conn is None
+    c = conn or _open()
+    try:
+        if test_type:
+            rows = c.execute(
+                """
+                SELECT timestamp, test_type, rtt_avg_ms, packet_loss_pct, throughput_mbps, jitter_ms
+                FROM test_runs
+                WHERE test_type = ?
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (test_type, limit)
+            ).fetchall()
+        else:
+            rows = c.execute(
+                """
+                SELECT timestamp, test_type, rtt_avg_ms, packet_loss_pct, throughput_mbps, jitter_ms
+                FROM test_runs
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (limit,)
+            ).fetchall()
+        res = [dict(row) for row in rows]
+        res.reverse()
+        return res
+    finally:
+        if _own:
+            c.close()
+
+def count_runs(conn: sqlite3.Connection = None) -> dict:
+    _own = conn is None
+    c = conn or _open()
+    try:
+        total = c.execute("SELECT COUNT(*) FROM test_runs").fetchone()[0]
+        success = c.execute("SELECT COUNT(*) FROM test_runs WHERE status = 'SUCCESS'").fetchone()[0]
+        return {
+            "total": total,
+            "success_count": success
+        }
+    finally:
+        if _own:
+            c.close()
+
 DB_PATH = os.environ.get(
     "WIFI_MONITOR_DB",
     os.path.join(os.path.dirname(__file__), "..", "data", "results.db")
@@ -51,6 +98,7 @@ def init_db(conn: sqlite3.Connection = None) -> None:
                 rtt_max_ms          REAL,
                 rtt_mdev_ms         REAL,
                 throughput_mbps     REAL,
+                upload_mbps         REAL,
                 jitter_ms           REAL,
                 iperf_version       TEXT,
                 raw_output          TEXT,
@@ -58,6 +106,11 @@ def init_db(conn: sqlite3.Connection = None) -> None:
                 notes               TEXT
             )
         """)
+        # migrate existing DBs — safe no-op if column already exists
+        try:
+            c.execute("ALTER TABLE test_runs ADD COLUMN upload_mbps REAL")
+        except Exception:
+            pass
         c.commit()
     finally:
         if _own:
@@ -77,9 +130,9 @@ def save_result(result: dict, conn: sqlite3.Connection = None) -> int:
                 protocol, duration_seconds, bandwidth_target,
                 packets_sent, packets_received, packet_loss_pct,
                 rtt_min_ms, rtt_avg_ms, rtt_max_ms, rtt_mdev_ms,
-                throughput_mbps, jitter_ms,
+                throughput_mbps, upload_mbps, jitter_ms,
                 iperf_version, raw_output, error, notes
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
                 result.get("timestamp"),          result.get("test_type"),
@@ -93,7 +146,8 @@ def save_result(result: dict, conn: sqlite3.Connection = None) -> int:
                 result.get("packet_loss_pct"),
                 result.get("rtt_min_ms"),         result.get("rtt_avg_ms"),
                 result.get("rtt_max_ms"),         result.get("rtt_mdev_ms"),
-                result.get("throughput_mbps"),    result.get("jitter_ms"),
+                result.get("throughput_mbps"),    result.get("upload_mbps"),
+                result.get("jitter_ms"),
                 result.get("iperf_version"),      result.get("raw_output"),
                 result.get("error"),              result.get("notes"),
             )

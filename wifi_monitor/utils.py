@@ -1,68 +1,112 @@
-"""
-utils.py
---------
-Shared helper utilities used across modules.
-"""
+from __future__ import annotations
 
-"""
-Shared utility functions used across all modules.
-Keep this file simple — no business logic here.
-"""
-
-import shutil
-import datetime
+from datetime import datetime, timezone
+from shutil import which
+from typing import Any
 
 
-def is_tool_installed(tool_name: str) -> bool:
-    """
-    Check if a CLI tool is available on PATH.
-    Uses shutil.which() — same as `which ping` in bash.
-
-    Example:
-        is_tool_installed("iperf3")  -> True or False
-        is_tool_installed("tcpdump") -> True or False
-    """
-    return shutil.which(tool_name) is not None
+EMPTY_STRINGS = {"", "na", "n/a", "none", "null", "nil", "unknown", "-"}
 
 
 def format_timestamp() -> str:
     """
     Return current UTC time as ISO 8601 string.
-    Example: "2026-06-13T08:30:00.123456"
-    Stored in DB so every result can be sorted chronologically.
+    Example: 2026-06-13T08:30:00.123456+00:00
     """
-    return datetime.datetime.utcnow().isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
-def bits_to_mbps(bits_per_second: float) -> float:
+def is_tool_installed(tool_name: str) -> bool:
     """
-    Convert bits/sec to Megabits/sec.
-    iperf3 JSON always returns bits_per_second.
-    Divide by 1,000,000 (not 1,048,576) because network
-    bandwidth uses SI units, not binary units.
+    Return True if a command-line tool is available in PATH.
+    Example: is_tool_installed("ping") -> True
     """
-    if bits_per_second is None:
+    return which(tool_name) is not None
+
+
+def clean_text(value: Any) -> str | None:
+    """
+    Normalize text values coming from CLI output, config, or DB.
+    Returns None for empty or placeholder values.
+    """
+    if value is None:
         return None
-    return round(bits_per_second / 1_000_000, 2)
+    text = str(value).strip()
+    if not text:
+        return None
+    if text.lower() in EMPTY_STRINGS:
+        return None
+    return text
 
 
-def safe_float(value, default=None):
+def safe_int(value: Any) -> int | None:
     """
-    Safely convert a value to float.
-    Returns default if conversion fails.
-    Prevents crashes when iperf3 returns unexpected types.
+    Convert value to int when possible, else return None.
+    Handles strings like '10', '10.0', and whitespace safely.
     """
+    value = clean_text(value)
+    if value is None:
+        return None
     try:
-        return float(value)
+        return int(float(value))
     except (TypeError, ValueError):
-        return default
+        return None
 
 
-def safe_int(value, default=None):
+def safe_float(value: Any, digits: int | None = None) -> float | None:
     """
-    Safely convert a value to int.
+    Convert value to float when possible, else return None.
+    Optional rounding can be applied using digits.
     """
+    value = clean_text(value)
+    if value is None:
+        return None
     try:
-        return int(value)
+        num = float(value)
+        return round(num, digits) if digits is not None else num
     except (TypeError, ValueError):
-        return default
+        return None
+
+
+def to_bool(value: Any) -> bool:
+    """
+    Convert common truthy/falsy values into bool.
+    Useful for config flags.
+    """
+    if isinstance(value, bool):
+        return value
+    value = clean_text(value)
+    if value is None:
+        return False
+    return value.lower() in {"1", "true", "yes", "y", "on"}
+
+
+def merge_dicts(base: dict | None, extra: dict | None) -> dict:
+    """
+    Merge two dicts safely without mutating inputs.
+    None inputs are treated as empty dicts.
+    """
+    merged = {}
+    if base:
+        merged.update(base)
+    if extra:
+        merged.update(extra)
+    return merged
+
+
+def compact_dict(data: dict[str, Any]) -> dict[str, Any]:
+    """
+    Return a copy of a dict with keys containing None values removed.
+    """
+    return {k: v for k, v in data.items() if v is not None}
+
+
+def ensure_keys(data: dict[str, Any], keys: list[str], default: Any = None) -> dict[str, Any]:
+    """
+    Ensure a dict contains a required set of keys.
+    Missing keys are added with the provided default.
+    """
+    out = dict(data)
+    for key in keys:
+        out.setdefault(key, default)
+    return out

@@ -1,101 +1,113 @@
-from wifi_monitor.storage import (
-    fetch_recent,
-    fetch_ping_stats,
-    fetch_throughput_stats,
-    count_rows
-)
+"""
+report.py
+---------
+Pure computation — no print(), no magic numbers.
+All thresholds from config via get_cfg().
+"""
+from __future__ import annotations
+import sqlite3
+from wifi_monitor.storage import fetch_recent
+from wifi_monitor.config  import get_cfg
 
-def _divider(char="─", width=60):
-    return char * width
+LOSS_WARN_PCT:   float = get_cfg("thresholds", "loss_warn_pct",        2.0)
+THROUGHPUT_WARN: float = get_cfg("thresholds", "throughput_warn_mbps", 10.0)
+RTT_WARN_MS:     float = get_cfg("thresholds", "rtt_warn_ms",          100.0)
+RTT_POOR_MS:     float = get_cfg("thresholds", "rtt_poor_ms",          200.0)
 
-def _fmt(value, suffix="", decimals=2, na="N/A"):
-    if value is None:
-        return na
-    return f"{value:.{decimals}f}{suffix}"
 
-def _quality_rating(avg_rtt_ms, avg_loss_pct):
-    if avg_loss_pct > 5:
-        return "POOR    (loss > 5%)"
-    if avg_loss_pct > 1:
-        return "FAIR    (loss 1-5%)"
-    if avg_rtt_ms > 150:
-        return "FAIR    (latency > 150ms)"
-    if avg_rtt_ms > 50:
-        return "GOOD    (latency 50-150ms)"
-    return "EXCELLENT (low latency, minimal loss)"
+def _safe_avg(vals): c=[v for v in vals if v is not None]; return round(sum(c)/len(c),3) if c else None
+def _safe_min(vals): c=[v for v in vals if v is not None]; return round(min(c),3) if c else None
+def _safe_max(vals): c=[v for v in vals if v is not None]; return round(max(c),3) if c else None
+def _fmt(v): return "N/A" if v is None else f"{v:.3f}"
 
-def print_summary(last_n=10, test_type="all"):
-    total = count_rows()
-    print()
-    print(_divider("═"))
-    print("  Wi-Fi Monitor — Test Report")
-    print(_divider("═"))
-    print(f"  Total records in database : {total}")
-    print(_divider())
 
-    if test_type in ("ping", "all"):
-        ping_stats = fetch_ping_stats(last_n=last_n)
-        print()
-        print("  PING RESULTS")
-        print(_divider("─", 40))
-        if ping_stats and ping_stats["total_runs"] > 0:
-            print(f"  Runs analysed  : {ping_stats['total_runs']}")
-            print(f"  Avg RTT        : {_fmt(ping_stats['avg_rtt_ms'], ' ms')}")
-            print(f"  Best RTT       : {_fmt(ping_stats['best_rtt_ms'], ' ms')}")
-            print(f"  Worst RTT      : {_fmt(ping_stats['worst_rtt_ms'], ' ms')}")
-            print(f"  Avg loss       : {_fmt(ping_stats['avg_loss_pct'], '%')}")
-            print(f"  Worst loss     : {_fmt(ping_stats['max_loss_pct'], '%')}")
-            avg_rtt  = ping_stats["avg_rtt_ms"]  or 999
-            avg_loss = ping_stats["avg_loss_pct"] or 0
-            print()
-            print(f"  Quality        : {_quality_rating(avg_rtt, avg_loss)}")
-        else:
-            print("  No successful ping results found.")
+def _ping_health(avg_loss):
+    if avg_loss is None:            return "UNKNOWN"
+    if avg_loss >= 10.0:            return "POOR"
+    if avg_loss >= LOSS_WARN_PCT:   return "DEGRADED"
+    return "GOOD"
 
-    if test_type in ("throughput", "all"):
-        tp_list = fetch_throughput_stats(last_n=last_n)
-        print()
-        print("  THROUGHPUT RESULTS")
-        print(_divider("─", 40))
-        if tp_list:
-            for tp in tp_list:
-                print()
-                print(f"  Protocol       : {tp.get('protocol','UNKNOWN')}")
-                print(f"  Runs analysed  : {tp['total_runs']}")
-                print(f"  Avg throughput : {_fmt(tp['avg_throughput_mbps'], ' Mbps')}")
-                print(f"  Best           : {_fmt(tp['best_throughput_mbps'], ' Mbps')}")
-                print(f"  Worst          : {_fmt(tp['worst_throughput_mbps'], ' Mbps')}")
-                if tp.get("avg_jitter_ms") is not None:
-                    print(f"  Avg jitter     : {_fmt(tp['avg_jitter_ms'], ' ms')}")
-                if tp.get("avg_loss_pct") is not None:
-                    print(f"  Avg loss       : {_fmt(tp['avg_loss_pct'], '%')}")
-        else:
-            print("  No successful throughput results found.")
 
-    print()
-    print(_divider("─", 40))
-    print(f"  LAST {last_n} RUNS (most recent first)")
-    print(_divider("─", 40))
-    print_recent(last_n=last_n, test_type=test_type)
-    print()
-    print(_divider("═"))
-    print()
+def _throughput_health(avg_mbps):
+    if avg_mbps is None:            return "NO DATA"
+    if avg_mbps < THROUGHPUT_WARN:  return "LOW"
+    return "GOOD"
 
-def print_recent(last_n=10, test_type="all"):
-    rows = fetch_recent(last_n=last_n, test_type=test_type)
-    if not rows:
-        print("  No results found.")
-        return
-    print(f"  {'#':<4} {'Timestamp':<22} {'Type':<12} {'Status':<8} {'Key Metric'}")
-    print("  " + _divider("─", 66))
-    for i, row in enumerate(rows, start=1):
-        ts     = (row["timestamp"] or "")[:19]
-        ttype  = row["test_type"] or "?"
-        status = row["status"] or "?"
-        if ttype == "ping":
-            metric = f"RTT {_fmt(row['rtt_avg_ms'], ' ms')}, Loss {_fmt(row['packet_loss_pct'], '%')}"
-        elif ttype == "throughput":
-            metric = f"{_fmt(row['throughput_mbps'], ' Mbps')} {row['protocol'] or ''}"
-        else:
-            metric = row["error"] or ""
-        print(f"  {i:<4} {ts:<22} {ttype:<12} {status:<8} {metric}")
+
+def _rtt_health(avg_rtt):
+    if avg_rtt is None:         return "UNKNOWN"
+    if avg_rtt >= RTT_POOR_MS:  return "POOR"
+    if avg_rtt >= RTT_WARN_MS:  return "HIGH"
+    return "GOOD"
+
+
+def ping_summary(limit=None, conn=None):
+    if limit is None: limit = get_cfg("report", "default_last", 20)
+    rows    = fetch_recent(limit=limit, test_type="ping", conn=conn)
+    if not rows: return {"total_runs": 0, "health": "NO DATA"}
+    success = [r for r in rows if r.get("status") == "SUCCESS"]
+    failed  = [r for r in rows if r.get("status") != "SUCCESS"]
+    avg_loss = _safe_avg([r.get("packet_loss_pct") for r in rows])
+    avg_rtt  = _safe_avg([r.get("rtt_avg_ms") for r in success])
+    return {
+        "total_runs":   len(rows),
+        "success_runs": len(success),
+        "failed_runs":  len(failed),
+        "avg_rtt_ms":   avg_rtt,
+        "min_rtt_ms":   _safe_min([r.get("rtt_min_ms") for r in success]),
+        "max_rtt_ms":   _safe_max([r.get("rtt_max_ms") for r in success]),
+        "avg_loss_pct": avg_loss,
+        "max_loss_pct": _safe_max([r.get("packet_loss_pct") for r in rows]),
+        "health":       _ping_health(avg_loss),
+        "rtt_health":   _rtt_health(avg_rtt),
+    }
+
+
+def throughput_summary(limit=None, conn=None):
+    if limit is None: limit = get_cfg("report", "default_last", 20)
+    rows    = fetch_recent(limit=limit, test_type="throughput", conn=conn)
+    if not rows: return {"total_runs": 0, "health": "NO DATA"}
+    success  = [r for r in rows if r.get("status") == "SUCCESS"]
+    failed   = [r for r in rows if r.get("status") != "SUCCESS"]
+    avg_mbps = _safe_avg([r.get("throughput_mbps") for r in success])
+    return {
+        "total_runs":    len(rows),
+        "success_runs":  len(success),
+        "failed_runs":   len(failed),
+        "avg_mbps":      avg_mbps,
+        "min_mbps":      _safe_min([r.get("throughput_mbps") for r in success]),
+        "max_mbps":      _safe_max([r.get("throughput_mbps") for r in success]),
+        "avg_jitter_ms": _safe_avg([r.get("jitter_ms") for r in success]),
+        "protocols_used": list({r.get("protocol") for r in rows if r.get("protocol")}),
+        "health":        _throughput_health(avg_mbps),
+    }
+
+
+def combined_summary(limit=None, conn=None):
+    return {
+        "ping":       ping_summary(limit=limit, conn=conn),
+        "throughput": throughput_summary(limit=limit, conn=conn),
+    }
+
+
+def format_ping_summary(s):
+    if s.get("total_runs", 0) == 0: return "  No ping data yet.\n"
+    return "\n".join([
+        f"  Runs     : {s['success_runs']} ok / {s['failed_runs']} failed / {s['total_runs']} total",
+        f"  Avg RTT  : {_fmt(s.get('avg_rtt_ms'))} ms",
+        f"  Min/Max  : {_fmt(s.get('min_rtt_ms'))} / {_fmt(s.get('max_rtt_ms'))} ms",
+        f"  Avg Loss : {_fmt(s.get('avg_loss_pct'))} %",
+        f"  Health   : {s.get('health')} | RTT: {s.get('rtt_health')}",
+    ])
+
+
+def format_throughput_summary(s):
+    if s.get("total_runs", 0) == 0: return "  No throughput data yet.\n"
+    proto = ", ".join(sorted(s.get("protocols_used") or [])) or "N/A"
+    return "\n".join([
+        f"  Runs       : {s['success_runs']} ok / {s['failed_runs']} failed / {s['total_runs']} total",
+        f"  Avg / Min / Max : {_fmt(s.get('avg_mbps'))} / {_fmt(s.get('min_mbps'))} / {_fmt(s.get('max_mbps'))} Mbps",
+        f"  Avg Jitter : {_fmt(s.get('avg_jitter_ms'))} ms",
+        f"  Protocol(s): {proto}",
+        f"  Health     : {s.get('health')}",
+    ])

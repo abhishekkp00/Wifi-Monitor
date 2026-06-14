@@ -1,0 +1,1 @@
+# tests/conftest.py — empty, triggers pytest path resolution
