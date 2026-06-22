@@ -18,6 +18,7 @@ def get_wifi_info() -> dict:
         ssid  = _get_ssid()
         ip    = _get_ip_address(iface) if iface else None
         gw    = _get_gateway()
+        sig   = _get_active_signal() if iface else None
 
         info.update({
             "available":  bool(iface or ssid or ip),
@@ -25,6 +26,7 @@ def get_wifi_info() -> dict:
             "interface":  iface or "N/A",
             "ip_address": ip    or "N/A",
             "gateway":    gw    or "N/A",
+            "signal_strength": sig,
         })
         logger.debug("wifi-info: %s", info)
         return info
@@ -33,6 +35,7 @@ def get_wifi_info() -> dict:
         info["error"] = str(exc)
         logger.warning("wifi-info failed: %s", exc)
         return info
+
 
 
 def _run(cmd: list[str], timeout: int = 5) -> str:
@@ -113,3 +116,22 @@ def _get_gateway() -> str | None:
         return m.group(1) if m else None
     except Exception:
         return None
+
+
+def _get_active_signal() -> int | None:
+    try:
+        proc = subprocess.run(
+            ["nmcli", "-t", "-f", "active,signal", "dev", "wifi"],
+            capture_output=True, timeout=5,
+        )
+        # decode manually to avoid encoding issues
+        out = proc.stdout.decode("utf-8", errors="replace")
+        for line in out.splitlines():
+            line = line.strip()
+            if line.lower().startswith("yes:"):
+                sig_str = line.split(":", 1)[1].strip()
+                if sig_str:
+                    return int(sig_str)
+    except Exception:
+        pass
+    return None

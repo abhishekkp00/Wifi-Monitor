@@ -44,6 +44,13 @@ header{position:sticky;top:0;z-index:100;background:rgba(13,21,38,.92);backdrop-
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn-sm{padding:5px 12px;font-size:12px}
 #last-upd{color:var(--muted);font-size:11px;white-space:nowrap}
+/* ── header tabs ── */
+.hdr-tabs{display:flex;gap:4px;margin-left:24px;background:var(--surface);border:1px solid var(--border);padding:3px;border-radius:8px}
+.tab-btn{padding:5px 12px;border-radius:6px;border:none;background:transparent;color:var(--muted2);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;font-family:inherit}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{background:var(--card2);color:var(--teal);box-shadow:0 2px 8px #00000040}
+.view-section{display:none}
+.view-section.active{display:block}
 
 /* ── main layout ── */
 .main{position:relative;z-index:1;padding:20px 24px;max-width:1440px;margin:0 auto}
@@ -154,9 +161,17 @@ footer{text-align:center;padding:20px;color:var(--muted);font-size:11px;border-t
     <div class="score-ring" id="score-ring">—</div>
     <div class="score-label"><div id="score-grade" class="score-grade">—</div><div style="color:var(--muted);font-size:10px">Quality</div></div>
   </div>
-  <div class="hdr-actions">
-    <button class="btn btn-teal btn-sm" id="btn-ping">⚡ Run Ping</button>
-    <button class="btn btn-purple btn-sm" id="btn-speed">📊 Speed Test</button>
+  <div class="hdr-tabs">
+    <button class="tab-btn active" id="tab-dashboard">📊 Dashboard</button>
+    <button class="tab-btn" id="tab-scanner">📶 Wi-Fi Scanner</button>
+  </div>
+  <div class="hdr-actions" style="display:flex;align-items:center;gap:10px;">
+    <div style="display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px 8px;height:28px;">
+      <span style="font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.05em;">Host</span>
+      <input type="text" id="ping-host-input" value="8.8.8.8" style="background:transparent;border:none;color:var(--text);font-size:11px;font-weight:600;width:75px;outline:none;" placeholder="8.8.8.8">
+    </div>
+    <button class="btn btn-teal btn-sm" id="btn-ping" style="height:28px;padding:4px 10px;">⚡ Run Ping</button>
+    <button class="btn btn-purple btn-sm" id="btn-speed" style="height:28px;padding:4px 10px;">📊 Speed Test</button>
     <span id="last-upd">—</span>
   </div>
 </header>
@@ -169,8 +184,69 @@ footer{text-align:center;padding:20px;color:var(--muted);font-size:11px;border-t
     <div class="wifi-item"><div class="wi-label">Interface</div><div class="wi-val" id="wi-iface">—</div></div>
     <div class="wifi-item"><div class="wi-label">IP Address</div><div class="wi-val" id="wi-ip">—</div></div>
     <div class="wifi-item"><div class="wi-label">Gateway</div><div class="wi-val" id="wi-gw">—</div></div>
+    <div class="wifi-item"><div class="wi-label">Signal Strength</div><div class="wi-val" id="wi-signal">—</div></div>
     <div class="wifi-item"><div class="wi-label">Total Runs</div><div class="wi-val" id="wi-total">—</div></div>
     <div class="wifi-item" style="border-right:none"><div class="wi-label">Success Rate</div><div class="wi-val" id="wi-rate">—</div></div>
+  </div>
+
+  <div id="view-dashboard" class="view-section active">
+
+  <!-- Live Diagnostics & Interactive Simulation Panel -->
+  <div style="display: grid; grid-template-columns: 1fr 340px; gap: 16px; margin-bottom: 20px;">
+    <!-- Diagnostics & Advisor Card -->
+    <div class="kpi-card" style="display: flex; flex-direction: column; justify-content: flex-start; min-height: 140px; padding: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span class="kpi-label" style="margin: 0; font-size: 11px;">🩺 Dynamic Network Health Advisor</span>
+        <span id="advisor-source-pill" class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); font-size: 9px; padding: 2px 6px;">Live Mode</span>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 100px 1fr; gap: 16px; align-items: start;">
+        <!-- Health status indicator -->
+        <div style="text-align: center; border-right: 1px solid var(--border); padding-right: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70px;">
+          <div id="health-index-score" style="font-size: 32px; font-weight: 800; color: var(--green); line-height: 1;">A+</div>
+          <div id="health-index-label" style="font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; margin-top: 4px; white-space: nowrap;">Pristine</div>
+        </div>
+        
+        <!-- Live Actionable Recommendations -->
+        <div>
+          <div id="advice-title" style="font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px;">Connection Quality is Excellent</div>
+          <div id="advice-body" style="font-size: 12px; color: var(--muted2); line-height: 1.5;">
+            Your signal strength (85%) is healthy. Low latency is expected. Excellent for interactive tasks like SSH, VoIP, and gaming.
+          </div>
+          <div id="advice-rec-list" style="margin-top: 8px; font-size: 11px; color: var(--teal); font-weight: 600;">
+            ✓ Optimal band detected (5 GHz) &nbsp;&bull;&nbsp; ✓ Adequate signal margin
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interview Demo Sandbox -->
+    <div class="kpi-card purple" style="display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; padding: 16px; border-color: rgba(139, 92, 246, 0.3);">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="kpi-label" style="margin: 0; font-size: 11px; color: var(--purple);">🎛️ Interview Demo Sandbox</span>
+        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+          <input type="checkbox" id="sim-enable-checkbox" style="cursor: pointer; width: 14px; height: 14px; accent-color: var(--purple);">
+          <span style="font-size: 11px; font-weight: 700; color: var(--muted2);">Simulate</span>
+        </label>
+      </div>
+
+      <div style="margin: 10px 0;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; font-weight: 600; color: var(--muted2);">
+          <span>Simulated Signal Strength</span>
+          <span id="sim-signal-val" style="color: var(--purple);">85%</span>
+        </div>
+        <input type="range" id="sim-signal-slider" min="5" max="100" value="85" disabled style="width: 100%; accent-color: var(--purple); cursor: not-allowed; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; height: 6px;">
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-purple btn-sm" id="btn-sim-stress" disabled style="flex: 1; padding: 4px 8px; font-size: 11px;">
+          🔥 Simulate Interference
+        </button>
+        <button class="btn btn-ghost btn-sm" id="btn-diagnose-report" style="flex: 1; padding: 4px 8px; font-size: 11px;">
+          📋 Full Report
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- KPI Cards -->
@@ -251,6 +327,69 @@ footer{text-align:center;padding:20px;color:var(--muted);font-size:11px;border-t
       </table>
     </div>
   </div>
+  </div><!-- /view-dashboard -->
+
+  <div id="view-scanner" class="view-section">
+    <!-- Upper scan control & Recommendations -->
+    <div style="display: grid; grid-template-columns: 1fr 340px; gap: 16px; margin-bottom: 20px;">
+      <!-- Recs Card -->
+      <div class="kpi-card" style="display: flex; flex-direction: column; justify-content: center; min-height: 120px;">
+        <div class="kpi-label">Channel Optimizer Advice</div>
+        <div id="scanner-recs" style="font-size: 13px; font-weight: 500; line-height: 1.6; color: var(--text);">
+          No scan data yet. Click "Scan Nearby Networks" to analyze nearby channels.
+        </div>
+      </div>
+      <!-- Scan Trigger Card -->
+      <div class="kpi-card purple" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 120px; text-align: center;">
+        <button class="btn btn-purple" id="btn-scan-wifi" style="padding: 10px 20px; font-size: 14px;">
+          🔄 Scan Nearby Networks
+        </button>
+        <div style="font-size: 11px; color: var(--muted); margin-top: 8px;" id="scan-status-text">
+          Ready to scan
+        </div>
+      </div>
+    </div>
+
+    <!-- Channel Charts -->
+    <div class="charts-grid" style="margin-bottom: 20px;">
+      <div class="chart-card">
+        <div class="chart-title"><span class="chart-dot" style="background:var(--teal)"></span>2.4 GHz Channel Congestion</div>
+        <canvas id="channel-24-chart"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><span class="chart-dot" style="background:var(--purple)"></span>5 GHz Channel Congestion</div>
+        <canvas id="channel-5-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Scanner Table -->
+    <div class="table-card">
+      <div class="section-title">Scanned Nearby Access Points</div>
+      <div class="table-wrap">
+        <table id="scanner-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>SSID</th>
+              <th>BSSID</th>
+              <th>Signal</th>
+              <th>Channel</th>
+              <th>Band</th>
+              <th>Max Rate</th>
+              <th>Security</th>
+            </tr>
+          </thead>
+          <tbody id="scanner-tbody">
+            <tr>
+              <td colspan="8" style="color:var(--muted);padding:20px;text-align:center;">
+                No networks scanned yet. Click "Scan Nearby Networks" to start.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- /view-scanner -->
 
 </div><!-- /main -->
 
@@ -289,6 +428,61 @@ footer{text-align:center;padding:20px;color:var(--muted);font-size:11px;border-t
   </div>
 </div>
 
+<!-- Diagnostic Report Modal -->
+<div class="sp-overlay" id="diag-overlay">
+  <div class="sp-modal" style="max-width: 580px;">
+    <div class="sp-header">
+      <div class="sp-title">🩺 Wi-Fi Diagnostics & Troubleshooting Report</div>
+      <button class="sp-close" id="diag-close" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:16px;">✕ Close</button>
+    </div>
+    
+    <div style="padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <div style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700;">Report Timestamp</div>
+        <div id="diag-timestamp" style="font-size: 13px; font-weight: 600; color: var(--text);">—</div>
+      </div>
+      <div style="text-align: right;">
+        <span id="diag-mode-pill" class="badge" style="background: rgba(139, 92, 246, 0.15); color: var(--purple); border: 1px solid rgba(139, 92, 246, 0.3); font-size: 10px; padding: 3px 8px;">Live Mode</span>
+      </div>
+    </div>
+
+    <!-- Active Interface Details -->
+    <div style="margin: 16px 0;">
+      <div style="font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 8px;">📡 Active Interface Profile</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
+        <div style="font-size: 12px; color: var(--muted2);">SSID: <strong id="diag-ssid" style="color:var(--text);">—</strong></div>
+        <div style="font-size: 12px; color: var(--muted2);">Interface: <strong id="diag-iface" style="color:var(--text);">—</strong></div>
+        <div style="font-size: 12px; color: var(--muted2);">IP Address: <strong id="diag-ip" style="color:var(--text);">—</strong></div>
+        <div style="font-size: 12px; color: var(--muted2);">Signal Strength: <strong id="diag-strength" style="color:var(--text);">—</strong></div>
+      </div>
+    </div>
+
+    <!-- Health Assessment -->
+    <div style="margin: 16px 0;">
+      <div style="font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 8px;">🩺 Health & Performance Analysis</div>
+      <div style="display: flex; gap: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px;">
+        <div id="diag-score-ring" style="width: 60px; height: 60px; border-radius: 50%; border: 4px solid var(--green); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--green); flex-shrink: 0;">A+</div>
+        <div>
+          <div id="diag-assessment-title" style="font-weight: 700; font-size: 13px; color: var(--text); margin-bottom: 4px;">Pristine Signal Profile</div>
+          <div id="diag-assessment-body" style="font-size: 12px; color: var(--muted2); line-height: 1.5;">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actionable Troubleshooting Checklist -->
+    <div style="margin: 16px 0 0 0;">
+      <div style="font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 8px;">🛠️ Actionable Troubleshooting Steps</div>
+      <ul id="diag-steps-list" style="font-size: 12px; color: var(--muted2); line-height: 1.6; margin: 0; padding-left: 20px;">
+        <!-- Dynamic list items -->
+      </ul>
+    </div>
+    
+    <div style="margin-top: 20px; text-align: right;">
+      <button class="btn btn-teal btn-sm" id="btn-print-report" style="padding: 6px 16px;">🖨️ Print Report</button>
+    </div>
+  </div>
+</div>
+
 <footer>Wi-Fi Monitor · Built with Python + Flask · Real-time via SSE</footer>
 
 <script>
@@ -302,10 +496,38 @@ const BASE_OPTS = {
   }
 };
 
-const rttChart = new Chart(document.getElementById("rtt-chart"),{type:"line",data:{labels:[],datasets:[
-  {label:"RTT avg",data:[],borderColor:"#06b6d4",backgroundColor:"#06b6d41a",tension:.35,fill:true,pointRadius:3,pointBackgroundColor:"#06b6d4"},
-  {label:"RTT max",data:[],borderColor:"#f97316",backgroundColor:"transparent",tension:.35,fill:false,pointRadius:2,borderDash:[5,4]},
-]},options:{...BASE_OPTS}});
+const rttChart = new Chart(document.getElementById("rtt-chart"), {
+  type: "line",
+  data: {
+    labels: [],
+    datasets: [
+      {label:"RTT avg",data:[],borderColor:"#06b6d4",backgroundColor:"#06b6d41a",tension:.35,fill:true,pointRadius:3,pointBackgroundColor:"#06b6d4",yAxisID:"y"},
+      {label:"RTT max",data:[],borderColor:"#f97316",backgroundColor:"transparent",tension:.35,fill:false,pointRadius:2,borderDash:[5,4],yAxisID:"y"},
+      {label:"Signal %",data:[],borderColor:"#10b981",backgroundColor:"transparent",tension:.35,fill:false,pointRadius:3,pointBackgroundColor:"#10b981",yAxisID:"y1"},
+    ]
+  },
+  options: {
+    ...BASE_OPTS,
+    scales: {
+      ...BASE_OPTS.scales,
+      y: {
+        type: 'linear',
+        position: 'left',
+        ticks: { color: "#64748b", font: { size: 10 } },
+        grid: { color: "#1c2e5088" }
+      },
+      y1: {
+        type: 'linear',
+        position: 'right',
+        min: 0,
+        max: 100,
+        ticks: { color: "#64748b", font: { size: 10 } },
+        grid: { drawOnChartArea: false },
+        title: { display: true, text: 'Signal Strength %', color: '#10b981', font: { size: 10, weight: 'bold' } }
+      }
+    }
+  }
+});
 
 const lossChart = new Chart(document.getElementById("loss-chart"),{type:"bar",data:{labels:[],datasets:[
   {label:"Packet Loss %",data:[],backgroundColor:"#ef444466",borderColor:"#ef4444",borderWidth:1,borderRadius:4},
@@ -342,12 +564,26 @@ function toast(msg, type="success"){
 }
 
 // ── Update functions ──────────────────────────────────────────────────────────
+let isSimulating = false;
+let lastLiveSignalVal = 85;
+
 function updateWifi(w, counts){
   const avail = w && w.available;
   document.getElementById("wi-ssid").textContent  = avail ? (w.ssid||"N/A") : "Not available";
   document.getElementById("wi-iface").textContent = avail ? (w.interface||"N/A") : "—";
   document.getElementById("wi-ip").textContent    = avail ? (w.ip_address||"N/A") : "—";
   document.getElementById("wi-gw").textContent    = avail ? (w.gateway||"N/A") : "—";
+  
+  if (avail && w.signal_strength != null) {
+    lastLiveSignalVal = w.signal_strength;
+  }
+  
+  if (!isSimulating) {
+    const sigVal = avail ? lastLiveSignalVal + "%" : "—";
+    document.getElementById("wi-signal").textContent = sigVal;
+    updateDiagnostics(lastLiveSignalVal, "Live");
+  }
+
   const bar = document.getElementById("wifi-bar");
   bar.classList.toggle("wifi-na", !avail);
   if(counts){
@@ -386,6 +622,7 @@ function updateCharts(cp, ct){
     rttChart.data.labels = cp.labels;
     rttChart.data.datasets[0].data = cp.rtt_avg;
     rttChart.data.datasets[1].data = cp.rtt_max||[];
+    rttChart.data.datasets[2].data = cp.signal_strength||[];
     rttChart.update("active");
     lossChart.data.labels = cp.labels;
     lossChart.data.datasets[0].data = cp.packet_loss;
@@ -463,9 +700,10 @@ function connectSSE(){
 
 // ── Run-now buttons ───────────────────────────────────────────────────────────
 document.getElementById("btn-ping").addEventListener("click", async ()=>{
-  const r = await fetch("/api/run/ping",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({host:"8.8.8.8",count:10})});
+  const hostVal = document.getElementById("ping-host-input").value.trim() || "8.8.8.8";
+  const r = await fetch("/api/run/ping",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({host:hostVal,count:10})});
   const d = await r.json();
-  if(r.ok) toast("⚡ Ping test started — results will appear shortly","success");
+  if(r.ok) toast(`⚡ Ping test to ${hostVal} started — results will appear shortly`,"success");
   else toast("⚠ "+d.error,"warn");
 });
 
@@ -581,6 +819,362 @@ document.getElementById("btn-speed").addEventListener("click", () => {
 document.getElementById("sp-close").addEventListener("click", closeSpeedModal);
 document.getElementById("sp-overlay").addEventListener("click", e => {
   if (e.target === document.getElementById("sp-overlay")) closeSpeedModal();
+});
+
+// ── Tab Switching ─────────────────────────────────────────────────────────────
+const tabDashboard = document.getElementById("tab-dashboard");
+const tabScanner   = document.getElementById("tab-scanner");
+const viewDashboard = document.getElementById("view-dashboard");
+const viewScanner   = document.getElementById("view-scanner");
+
+tabDashboard.addEventListener("click", () => {
+  tabDashboard.classList.add("active");
+  tabScanner.classList.remove("active");
+  viewDashboard.classList.add("active");
+  viewScanner.classList.remove("active");
+});
+
+tabScanner.addEventListener("click", () => {
+  tabScanner.classList.add("active");
+  tabDashboard.classList.remove("active");
+  viewScanner.classList.add("active");
+  viewDashboard.classList.remove("active");
+  
+  // auto scan if table is empty
+  const tbody = document.getElementById("scanner-tbody");
+  if (tbody.children.length === 1 && tbody.innerHTML.includes("No networks scanned yet")) {
+    triggerWifiScan();
+  }
+});
+
+// ── Wi-Fi Scanner Charts ──────────────────────────────────────────────────────
+const ch24Chart = new Chart(document.getElementById("channel-24-chart"), {
+  type: "bar",
+  data: {
+    labels: ["1", "6", "11"],
+    datasets: [{
+      label: "Access Points",
+      data: [0, 0, 0],
+      backgroundColor: "rgba(6, 182, 212, 0.4)",
+      borderColor: "var(--teal)",
+      borderWidth: 1,
+      borderRadius: 4
+    }]
+  },
+  options: {
+    ...BASE_OPTS,
+    scales: {
+      ...BASE_OPTS.scales,
+      y: { ...BASE_OPTS.scales.y, min: 0, ticks: { stepSize: 1, color: "#64748b" } }
+    }
+  }
+});
+
+const ch5Chart = new Chart(document.getElementById("channel-5-chart"), {
+  type: "bar",
+  data: {
+    labels: ["36", "40", "44", "48", "149", "153", "157", "161"],
+    datasets: [{
+      label: "Access Points",
+      data: [0, 0, 0, 0, 0, 0, 0, 0],
+      backgroundColor: "rgba(139, 92, 246, 0.4)",
+      borderColor: "var(--purple)",
+      borderWidth: 1,
+      borderRadius: 4
+    }]
+  },
+  options: {
+    ...BASE_OPTS,
+    scales: {
+      ...BASE_OPTS.scales,
+      y: { ...BASE_OPTS.scales.y, min: 0, ticks: { stepSize: 1, color: "#64748b" } }
+    }
+  }
+});
+
+// ── Wi-Fi Scan Execution ──────────────────────────────────────────────────────
+const btnScan = document.getElementById("btn-scan-wifi");
+const scanStatus = document.getElementById("scan-status-text");
+
+function signalBarHtml(sig) {
+  const color = sig >= 75 ? "var(--green)" : sig >= 50 ? "var(--yellow)" : "var(--red)";
+  return `
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-weight:600;min-width:30px;">${sig}%</span>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:4px;width:80px;height:8px;overflow:hidden;">
+        <div style="background:${color};width:${sig}%;height:100%;"></div>
+      </div>
+    </div>
+  `;
+}
+
+function triggerWifiScan() {
+  btnScan.disabled = true;
+  scanStatus.textContent = "Scanning airwaves (takes a few seconds)...";
+  
+  fetch("/api/wifi/scan")
+    .then(r => r.json())
+    .then(data => {
+      // 1. Update Recommendations Card
+      const recs = data.analysis.recommendation_summary;
+      document.getElementById("scanner-recs").innerHTML = recs;
+      
+      // 2. Update Table
+      const tbody = document.getElementById("scanner-tbody");
+      if (!data.networks || !data.networks.length) {
+        tbody.innerHTML = `<tr><td colspan="8" style="color:var(--muted);padding:20px;text-align:center;">No nearby Wi-Fi networks found.</td></tr>`;
+      } else {
+        tbody.innerHTML = data.networks.map(n => `
+          <tr class="${n.active ? 'active-wifi-row' : ''}" style="${n.active ? 'background: #10b98118;' : ''}">
+            <td>${n.active ? '🟢 Connected' : '⚪ Nearby'}</td>
+            <td style="font-weight:600;">${n.ssid}</td>
+            <td style="font-family:monospace;font-size:12px;">${n.bssid}</td>
+            <td>${signalBarHtml(n.signal)}</td>
+            <td>${n.channel}</td>
+            <td>${n.band}</td>
+            <td>${n.rate}</td>
+            <td>${n.security}</td>
+          </tr>
+        `).join("");
+      }
+      
+      // 3. Update 2.4 GHz Chart
+      const c24 = data.analysis.congestion_24;
+      const sorted24 = Object.keys(c24).map(Number).sort((a, b) => a - b);
+      ch24Chart.data.labels = sorted24.map(String);
+      ch24Chart.data.datasets[0].data = sorted24.map(ch => c24[ch]);
+      ch24Chart.update();
+      
+      // 4. Update 5 GHz Chart
+      const c5 = data.analysis.congestion_5;
+      const sorted5 = Object.keys(c5).map(Number).sort((a, b) => a - b);
+      ch5Chart.data.labels = sorted5.map(String);
+      ch5Chart.data.datasets[0].data = sorted5.map(ch => c5[ch]);
+      ch5Chart.update();
+      
+      toast("📡 Wi-Fi scan complete!", "success");
+    })
+    .catch(err => {
+      console.error(err);
+      toast("❌ Failed to scan Wi-Fi networks", "error");
+    })
+    .finally(() => {
+      btnScan.disabled = false;
+      scanStatus.textContent = "Ready to scan";
+    });
+}
+
+btnScan.addEventListener("click", triggerWifiScan);
+
+// ── Advisor & Simulation Sandbox Logic ────────────────────────────────────────
+function getHealthInsights(sig) {
+  let grade, label, title, body, recList, color, steps;
+  
+  if (sig >= 80) {
+    grade = "A+";
+    label = "Pristine";
+    title = "Signal Quality is Excellent";
+    body = "Your connection is highly stable. Minimal packet retransmissions. Ideal for real-time applications (VoIP, SSH, gaming) and high-throughput streaming.";
+    recList = "✓ Optimal Band Detected &nbsp;&bull;&nbsp; ✓ Low interference margin";
+    color = "var(--green)";
+    steps = [
+      "No client changes needed. Current signal is optimal.",
+      "Prefer using the 5 GHz band to maintain maximum throughput.",
+      "Check channel layout to ensure zero co-channel interference."
+    ];
+  } else if (sig >= 60) {
+    grade = "B";
+    label = "Good";
+    title = "Signal Quality is Stable";
+    body = "Minor attenuation detected. Connection is fully suitable for web browsing, video conferencing, and general workflows without noticeable latency.";
+    recList = "✓ Adequate signal-to-noise ratio &nbsp;&bull;&nbsp; ✓ Low packet loss";
+    color = "var(--teal)";
+    steps = [
+      "Maintain line of sight if possible, or limit physical obstructions.",
+      "Connection is stable; no urgent action required.",
+      "If playing competitive games, consider switching to wired or 5 GHz."
+    ];
+  } else if (sig >= 40) {
+    grade = "C";
+    label = "Fair (Weak)";
+    title = "Signal Quality is Attenuated";
+    body = "Weakening signal detected. Retransmissions may occur, causing minor jitter or throughput drops. If you're on a 5 GHz band, consider moving closer or switching to the 2.4 GHz band for superior wall penetration.";
+    recList = "⚠ Consider 2.4 GHz Band &nbsp;&bull;&nbsp; ⚠ Avoid physical obstructions";
+    color = "var(--yellow)";
+    steps = [
+      "Move closer to your wireless access point or router.",
+      "If your router supports dual-band, switch from 5 GHz to 2.4 GHz for better wall penetration.",
+      "Avoid running high-bandwidth applications simultaneously."
+    ];
+  } else {
+    grade = "F";
+    label = "Critical";
+    title = "Severe Signal Loss & Interference";
+    body = "Severe signal degradation. High probability of packet loss, latency spikes, and speed throttling. Immediate relocation or client intervention recommended.";
+    recList = "⚡ Action: Relocate client &nbsp;&bull;&nbsp; ⚡ Action: Force 2.4 GHz &nbsp;&bull;&nbsp; ⚡ Check for microwave / physical block";
+    color = "var(--red)";
+    steps = [
+      "<strong>Critical:</strong> Relocate client immediately closer to the router.",
+      "Force your Wi-Fi interface to connect via the 2.4 GHz band.",
+      "Check for local active devices operating on 2.4 GHz (e.g. microwaves, baby monitors) that might be causing severe RF interference."
+    ];
+  }
+  
+  return { grade, label, title, body, recList, color, steps };
+}
+
+function updateDiagnostics(sig, mode) {
+  const insights = getHealthInsights(sig);
+  
+  // Update advisor card
+  document.getElementById("health-index-score").textContent = insights.grade;
+  document.getElementById("health-index-score").style.color = insights.color;
+  document.getElementById("health-index-label").textContent = insights.label;
+  document.getElementById("health-index-label").style.color = insights.color;
+  
+  document.getElementById("advice-title").innerHTML = insights.title;
+  document.getElementById("advice-body").innerHTML = insights.body;
+  document.getElementById("advice-rec-list").innerHTML = insights.recList;
+  
+  // Source pill update
+  const sourcePill = document.getElementById("advisor-source-pill");
+  sourcePill.textContent = mode + " Mode";
+  if (mode === "Live") {
+    sourcePill.style.background = "rgba(16, 185, 129, 0.15)";
+    sourcePill.style.color = "var(--green)";
+    sourcePill.style.borderColor = "rgba(16, 185, 129, 0.3)";
+  } else {
+    sourcePill.style.background = "rgba(139, 92, 246, 0.15)";
+    sourcePill.style.color = "var(--purple)";
+    sourcePill.style.borderColor = "rgba(139, 92, 246, 0.3)";
+  }
+  
+  // Sync slider if not simulating
+  if (mode === "Live") {
+    document.getElementById("sim-signal-slider").value = sig;
+    document.getElementById("sim-signal-val").textContent = sig + "%";
+  }
+}
+
+// Sandbox Listeners
+const simCheckbox = document.getElementById("sim-enable-checkbox");
+const simSlider = document.getElementById("sim-signal-slider");
+const btnStress = document.getElementById("btn-sim-stress");
+
+simCheckbox.addEventListener("change", () => {
+  isSimulating = simCheckbox.checked;
+  simSlider.disabled = !isSimulating;
+  btnStress.disabled = !isSimulating;
+  simSlider.style.cursor = isSimulating ? "pointer" : "not-allowed";
+  
+  if (isSimulating) {
+    const val = simSlider.value;
+    document.getElementById("wi-signal").textContent = val + "% (Sim)";
+    updateDiagnostics(val, "Simulated");
+  } else {
+    document.getElementById("wi-signal").textContent = lastLiveSignalVal + "%";
+    updateDiagnostics(lastLiveSignalVal, "Live");
+  }
+});
+
+simSlider.addEventListener("input", () => {
+  if (isSimulating) {
+    const val = simSlider.value;
+    document.getElementById("sim-signal-val").textContent = val + "%";
+    document.getElementById("wi-signal").textContent = val + "% (Sim)";
+    updateDiagnostics(val, "Simulated");
+  }
+});
+
+// Simulate Interference Stress Test Click
+btnStress.addEventListener("click", () => {
+  btnStress.disabled = true;
+  simSlider.disabled = true;
+  
+  // Set slider & simulation value to 12%
+  simSlider.value = 12;
+  document.getElementById("sim-signal-val").textContent = "12% [STRESSED]";
+  document.getElementById("wi-signal").textContent = "12% (Sim-Stressed)";
+  updateDiagnostics(12, "Simulation Stress");
+  
+  // Inject latency spike & packet loss visually into charts for interactive wow factor!
+  const nowStr = new Date().toLocaleTimeString();
+  
+  // Append new mock point on charts
+  rttChart.data.labels.push(nowStr);
+  rttChart.data.datasets[0].data.push(195.4); // RTT Avg spike
+  rttChart.data.datasets[1].data.push(320.0); // RTT Max spike
+  rttChart.data.datasets[2].data.push(12);    // Signal Strength Drop
+  rttChart.update();
+  
+  lossChart.data.labels.push(nowStr);
+  lossChart.data.datasets[0].data.push(15.0); // 15% Packet Loss
+  lossChart.update();
+  
+  toast("⚠ Simulated Severe RF Interference! Signal dropped to 12% & Latency spiked to 195ms.", "error");
+  
+  // Restore after 5 seconds
+  setTimeout(() => {
+    if (isSimulating) {
+      simSlider.value = 75;
+      simSlider.disabled = false;
+      btnStress.disabled = false;
+      document.getElementById("sim-signal-val").textContent = "75%";
+      document.getElementById("wi-signal").textContent = "75% (Sim)";
+      updateDiagnostics(75, "Simulated");
+    } else {
+      simSlider.disabled = true;
+      btnStress.disabled = true;
+    }
+    toast("✓ Simulated Interference cleared. Network recovering...", "success");
+  }, 5000);
+});
+
+// Full Report Modal Logic
+const diagOverlay = document.getElementById("diag-overlay");
+const diagClose = document.getElementById("diag-close");
+const btnReport = document.getElementById("btn-diagnose-report");
+const btnPrintReport = document.getElementById("btn-print-report");
+
+btnReport.addEventListener("click", () => {
+  const currentSignal = isSimulating ? parseInt(simSlider.value) : lastLiveSignalVal;
+  const insights = getHealthInsights(currentSignal);
+  
+  // Timestamp
+  document.getElementById("diag-timestamp").textContent = new Date().toLocaleString();
+  document.getElementById("diag-mode-pill").textContent = (isSimulating ? "Simulated" : "Live") + " Mode";
+  
+  // Active Profiles
+  document.getElementById("diag-ssid").textContent = document.getElementById("wi-ssid").textContent;
+  document.getElementById("diag-iface").textContent = document.getElementById("wi-iface").textContent;
+  document.getElementById("diag-ip").textContent = document.getElementById("wi-ip").textContent;
+  document.getElementById("diag-strength").textContent = currentSignal + "%";
+  
+  // Health Analysis
+  const ring = document.getElementById("diag-score-ring");
+  ring.textContent = insights.grade;
+  ring.style.borderColor = insights.color;
+  ring.style.color = insights.color;
+  
+  document.getElementById("diag-assessment-title").innerHTML = insights.title;
+  document.getElementById("diag-assessment-body").innerHTML = insights.body;
+  
+  // Checklist Steps
+  const list = document.getElementById("diag-steps-list");
+  list.innerHTML = insights.steps.map(step => `
+    <li style="margin-bottom: 6px;">${step}</li>
+  `).join("");
+  
+  diagOverlay.classList.add("open");
+});
+
+diagClose.addEventListener("click", () => diagOverlay.classList.remove("open"));
+diagOverlay.addEventListener("click", (e) => {
+  if (e.target === diagOverlay) diagOverlay.classList.remove("open");
+});
+
+btnPrintReport.addEventListener("click", () => {
+  window.print();
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────

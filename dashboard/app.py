@@ -68,6 +68,21 @@ def _format_label(ts: str) -> str:
     return time_part.split(".")[0][:8] if "." in time_part else time_part.split("+")[0][:8]
 
 
+def _enrich_with_wifi(r: dict) -> dict:
+    try:
+        wi = get_wifi_info()
+        if wi.get("available"):
+            r.update({
+                "ssid": wi.get("ssid"),
+                "interface": wi.get("interface"),
+                "ip_address": wi.get("ip_address"),
+                "signal_strength": wi.get("signal_strength"),
+            })
+    except Exception:
+        pass
+    return r
+
+
 def _build_summary_payload():
     limit_tbl   = get_cfg("dashboard", "table_limit", 20)
     limit_chart = get_cfg("dashboard", "chart_limit", 50)
@@ -95,6 +110,7 @@ def _build_summary_payload():
             "labels":      [_format_label(str(r.get("timestamp", ""))) for r in pc],
             "rtt_avg":     [r.get("rtt_avg_ms")      for r in pc],
             "packet_loss": [r.get("packet_loss_pct") for r in pc],
+            "signal_strength": [r.get("signal_strength") for r in pc],
         },
         "chart_throughput": {
             "labels":     [_format_label(str(r.get("timestamp", ""))) for r in tc],
@@ -112,6 +128,7 @@ def _run_ping_bg(host: str, count: int):
     _set_status(running="ping")
     try:
         r = run_ping(host=host, count=count)
+        _enrich_with_wifi(r)
         save_result(r)
         _set_status(last_ping=r)
     finally:
@@ -122,10 +139,12 @@ def _run_speedtest_bg():
     _set_status(running="speedtest")
     try:
         r = run_speedtest()
+        _enrich_with_wifi(r)
         save_result(r)
         _set_status(last_speed=r)
     finally:
         _set_status(running=None)
+
 
 
 # ── Flask app factory ─────────────────────────────────────────────────────────
@@ -194,6 +213,17 @@ def create_app(auto_run: bool = False) -> Flask:
     def api_status():
         with _lock:
             return jsonify(dict(_status))
+
+    @app.route("/api/wifi/scan")
+    def api_wifi_scan():
+        from wifi_monitor.scanner import scan_nearby_wifi, analyze_channels
+        networks = scan_nearby_wifi()
+        analysis = analyze_channels(networks)
+        return jsonify({
+            "networks": networks,
+            "analysis": analysis
+        })
+
 
     # ── on-demand test triggers ────────────────────────────────────────────────
 
@@ -307,6 +337,7 @@ def create_app(auto_run: bool = False) -> Flask:
                     "error": None, "error_message": None,
                 }
                 if dl_mbps:
+                    _enrich_with_wifi(result)
                     save_result(result)
                     _set_status(last_speed=result)
 
@@ -327,7 +358,7 @@ if __name__ == "__main__":
     app = create_app(auto_run=True)
     app.run(
         host=get_cfg("dashboard", "host",  "127.0.0.1"),
-        port=get_cfg("dashboard", "port",  5000),
+        port=get_cfg("dashboard", "port",  5001),
         debug=get_cfg("dashboard", "debug", False),
         use_reloader=False,   # reloader conflicts with background threads
         threaded=True,

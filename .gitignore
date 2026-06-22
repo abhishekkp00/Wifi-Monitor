@@ -4,6 +4,7 @@ venv/
 env/
 ENV/
 
+
 # Python Cache and Compilations
 __pycache__/
 *.pyc
@@ -14,6 +15,7 @@ __pycache__/
 htmlcov/
 .eggs/
 *.egg-info/
+*.pdf
 
 # Local Configurations & Environments
 .env

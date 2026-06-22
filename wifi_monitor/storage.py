@@ -17,7 +17,7 @@ def fetch_chart_data(limit: int = 20, test_type: str | None = None, conn: sqlite
         if test_type:
             rows = c.execute(
                 """
-                SELECT timestamp, test_type, rtt_avg_ms, packet_loss_pct, throughput_mbps, jitter_ms
+                SELECT timestamp, test_type, rtt_avg_ms, packet_loss_pct, throughput_mbps, jitter_ms, signal_strength
                 FROM test_runs
                 WHERE test_type = ?
                 ORDER BY id DESC
@@ -28,7 +28,7 @@ def fetch_chart_data(limit: int = 20, test_type: str | None = None, conn: sqlite
         else:
             rows = c.execute(
                 """
-                SELECT timestamp, test_type, rtt_avg_ms, packet_loss_pct, throughput_mbps, jitter_ms
+                SELECT timestamp, test_type, rtt_avg_ms, packet_loss_pct, throughput_mbps, jitter_ms, signal_strength
                 FROM test_runs
                 ORDER BY id DESC
                 LIMIT ?
@@ -103,12 +103,17 @@ def init_db(conn: sqlite3.Connection = None) -> None:
                 iperf_version       TEXT,
                 raw_output          TEXT,
                 error               TEXT,
-                notes               TEXT
+                notes               TEXT,
+                signal_strength     INTEGER
             )
         """)
         # migrate existing DBs — safe no-op if column already exists
         try:
             c.execute("ALTER TABLE test_runs ADD COLUMN upload_mbps REAL")
+        except Exception:
+            pass
+        try:
+            c.execute("ALTER TABLE test_runs ADD COLUMN signal_strength INTEGER")
         except Exception:
             pass
         c.commit()
@@ -131,8 +136,8 @@ def save_result(result: dict, conn: sqlite3.Connection = None) -> int:
                 packets_sent, packets_received, packet_loss_pct,
                 rtt_min_ms, rtt_avg_ms, rtt_max_ms, rtt_mdev_ms,
                 throughput_mbps, upload_mbps, jitter_ms,
-                iperf_version, raw_output, error, notes
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                iperf_version, raw_output, error, notes, signal_strength
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
                 result.get("timestamp"),          result.get("test_type"),
@@ -150,6 +155,7 @@ def save_result(result: dict, conn: sqlite3.Connection = None) -> int:
                 result.get("jitter_ms"),
                 result.get("iperf_version"),      result.get("raw_output"),
                 result.get("error"),              result.get("notes"),
+                result.get("signal_strength"),
             )
         )
         c.commit()
