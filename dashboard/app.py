@@ -224,6 +224,38 @@ def create_app(auto_run: bool = False) -> Flask:
             "analysis": analysis
         })
 
+    @app.route("/api/wifi/connect", methods=["POST"])
+    def api_wifi_connect():
+        """Connect to a Wi-Fi network via nmcli."""
+        body = request.get_json(silent=True) or {}
+        ssid = body.get("ssid", "").strip()
+        password = body.get("password", "").strip()
+
+        if not ssid:
+            return jsonify({"success": False, "error": "SSID is required"}), 400
+
+        try:
+            cmd = ["nmcli", "device", "wifi", "connect", ssid]
+            if password:
+                cmd += ["password", password]
+
+            proc = subprocess.run(
+                cmd,
+                capture_output=True, text=True, timeout=20
+            )
+
+            if proc.returncode == 0:
+                output = proc.stdout.strip()
+                return jsonify({"success": True, "message": output or f"Connected to {ssid}"})
+            else:
+                err = proc.stderr.strip() or proc.stdout.strip()
+                return jsonify({"success": False, "error": err or "Connection failed"}), 500
+
+        except subprocess.TimeoutExpired:
+            return jsonify({"success": False, "error": "Connection timed out after 20 seconds"}), 504
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
 
     # ── on-demand test triggers ────────────────────────────────────────────────
 

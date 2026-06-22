@@ -121,6 +121,68 @@ tr:hover td{background:var(--card2)}
 /* ── footer ── */
 footer{text-align:center;padding:20px;color:var(--muted);font-size:11px;border-top:1px solid var(--border)}
 
+/* ── recommendation cards ── */
+.rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:20px}
+.rec-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;cursor:pointer;transition:all .25s;overflow:visible}
+.rec-card:hover{border-color:var(--teal);transform:translateY(-2px);box-shadow:0 8px 32px #06b6d422}
+.rec-card.top-pick{border-color:#10b98155;box-shadow:0 0 0 1px #10b98122}
+.rec-card.top-pick:hover{border-color:var(--green);box-shadow:0 8px 32px #10b98133}
+.rec-card.connected-card{border-color:#06b6d466;background:linear-gradient(135deg,#06b6d408,var(--card))}
+.rec-rank{position:absolute;top:-8px;left:16px;background:var(--teal);color:#000;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;letter-spacing:.04em}
+.rec-rank.gold{background:#f59e0b}
+.rec-rank.connected{background:var(--green)}
+.rec-ssid{font-size:15px;font-weight:700;color:var(--text);margin:8px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec-bssid{font-size:10px;color:var(--muted);font-family:monospace;margin-bottom:12px}
+.rec-score-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.rec-score-ring{width:44px;height:44px;border-radius:50%;border:3px solid var(--teal);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--teal);flex-shrink:0}
+.rec-score-ring.green{border-color:var(--green);color:var(--green)}
+.rec-score-ring.yellow{border-color:var(--yellow);color:var(--yellow)}
+.rec-score-ring.red{border-color:var(--red);color:var(--red)}
+.rec-score-info{flex:1}
+.rec-score-label{font-size:11px;font-weight:700;color:var(--text);margin-bottom:2px}
+.rec-score-sub{font-size:10px;color:var(--muted2)}
+.rec-bars{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.rec-bar-row{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--muted2)}
+.rec-bar-row span:first-child{width:42px;text-align:right;flex-shrink:0}
+.rec-bar-track{flex:1;height:5px;background:var(--card2);border-radius:99px;overflow:hidden}
+.rec-bar-fill{height:100%;border-radius:99px;transition:width .6s ease}
+.rec-bar-val{width:38px;text-align:right;flex-shrink:0;font-weight:600;color:var(--text)}
+.rec-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.rec-tag{font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid var(--border);color:var(--muted2);background:var(--card2)}
+.rec-tag.good{background:#10b98118;border-color:#10b98144;color:var(--green)}
+.rec-tag.warn{background:#f59e0b18;border-color:#f59e0b44;color:var(--yellow)}
+.rec-tag.bad{background:#ef444418;border-color:#ef444444;color:var(--red)}
+.rec-actions{display:flex;gap:6px}
+.btn-connect{flex:1;padding:7px 12px;border-radius:8px;border:1px solid var(--teal);background:transparent;color:var(--teal);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px}
+.btn-connect:hover{background:var(--teal);color:#000}
+.btn-connect.connected-btn{border-color:var(--green);color:var(--green);background:#10b98118}
+.btn-connect:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── password modal ── */
+.pw-overlay{position:fixed;inset:0;background:rgba(6,11,20,.88);backdrop-filter:blur(8px);z-index:600;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.pw-overlay.open{opacity:1;pointer-events:all}
+.pw-modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;width:min(420px,95vw);box-shadow:0 32px 80px #00000080}
+.pw-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.pw-sub{font-size:12px;color:var(--muted2);margin-bottom:18px}
+.pw-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:10px 12px;outline:none;font-family:inherit;transition:border-color .2s;margin-bottom:14px}
+.pw-input:focus{border-color:var(--teal)}
+.pw-btns{display:flex;gap:8px}
+
+/* ── network tooltip ── */
+.net-tooltip{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--teal);border-radius:12px;padding:14px 16px;width:280px;z-index:200;pointer-events:none;opacity:0;transition:opacity .2s;box-shadow:0 12px 40px #00000066;font-size:12px}
+.rec-card:hover .net-tooltip{opacity:1}
+.tt-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;color:var(--muted2)}
+.tt-row span:last-child{color:var(--text);font-weight:600}
+.tt-divider{border:none;border-top:1px solid var(--border);margin:8px 0}
+.tt-advice{font-size:11px;color:var(--teal);font-weight:600;line-height:1.5}
+
+/* ── rec summary banner ── */
+.rec-banner{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px}
+.rec-banner-icon{font-size:28px;flex-shrink:0}
+.rec-banner-text{flex:1}
+.rec-banner-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
+.rec-banner-sub{font-size:12px;color:var(--muted2);line-height:1.5}
+
 /* ── speed test modal ── */
 .sp-overlay{position:fixed;inset:0;background:rgba(6,11,20,.85);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
 .sp-overlay.open{opacity:1;pointer-events:all}
@@ -330,66 +392,70 @@ footer{text-align:center;padding:20px;color:var(--muted);font-size:11px;border-t
   </div><!-- /view-dashboard -->
 
   <div id="view-scanner" class="view-section">
-    <!-- Upper scan control & Recommendations -->
-    <div style="display: grid; grid-template-columns: 1fr 340px; gap: 16px; margin-bottom: 20px;">
-      <!-- Recs Card -->
-      <div class="kpi-card" style="display: flex; flex-direction: column; justify-content: center; min-height: 120px;">
-        <div class="kpi-label">Channel Optimizer Advice</div>
-        <div id="scanner-recs" style="font-size: 13px; font-weight: 500; line-height: 1.6; color: var(--text);">
-          No scan data yet. Click "Scan Nearby Networks" to analyze nearby channels.
-        </div>
+
+    <!-- Scan Controls Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap;">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:3px;">📶 Wi-Fi Network Recommendations</div>
+        <div style="font-size:12px;color:var(--muted2);">Ranked by signal strength, band quality, speed rating &amp; security. Hover any card for full insights.</div>
       </div>
-      <!-- Scan Trigger Card -->
-      <div class="kpi-card purple" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 120px; text-align: center;">
-        <button class="btn btn-purple" id="btn-scan-wifi" style="padding: 10px 20px; font-size: 14px;">
-          🔄 Scan Nearby Networks
-        </button>
-        <div style="font-size: 11px; color: var(--muted); margin-top: 8px;" id="scan-status-text">
-          Ready to scan
-        </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="scan-status-text" style="font-size:11px;color:var(--muted);">Ready to scan</span>
+        <button class="btn btn-purple" id="btn-scan-wifi" style="padding:8px 18px;font-size:13px;">🔄 Scan Networks</button>
       </div>
     </div>
 
-    <!-- Channel Charts -->
-    <div class="charts-grid" style="margin-bottom: 20px;">
-      <div class="chart-card">
-        <div class="chart-title"><span class="chart-dot" style="background:var(--teal)"></span>2.4 GHz Channel Congestion</div>
-        <canvas id="channel-24-chart"></canvas>
+    <!-- Smart Recommendation Banner -->
+    <div class="rec-banner" id="rec-banner" style="display:none;">
+      <div class="rec-banner-icon" id="rec-banner-icon">🏆</div>
+      <div class="rec-banner-text">
+        <div class="rec-banner-title" id="rec-banner-title">Best Recommendation</div>
+        <div class="rec-banner-sub" id="rec-banner-sub">Scan networks to see recommendations.</div>
       </div>
-      <div class="chart-card">
-        <div class="chart-title"><span class="chart-dot" style="background:var(--purple)"></span>5 GHz Channel Congestion</div>
-        <canvas id="channel-5-chart"></canvas>
+      <div id="rec-banner-score" style="font-size:28px;font-weight:800;color:var(--green);min-width:50px;text-align:center;"></div>
+    </div>
+
+    <!-- Recommendation Cards Grid -->
+    <div class="rec-grid" id="rec-grid">
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:13px;">
+        🔍 No networks found. Click <strong style="color:var(--teal)">Scan Networks</strong> to discover and rank nearby Wi-Fi networks.
       </div>
     </div>
 
-    <!-- Scanner Table -->
-    <div class="table-card">
-      <div class="section-title">Scanned Nearby Access Points</div>
-      <div class="table-wrap">
-        <table id="scanner-table">
-          <thead>
-            <tr>
-              <th>Status</th>
-              <th>SSID</th>
-              <th>BSSID</th>
-              <th>Signal</th>
-              <th>Channel</th>
-              <th>Band</th>
-              <th>Max Rate</th>
-              <th>Security</th>
-            </tr>
-          </thead>
-          <tbody id="scanner-tbody">
-            <tr>
-              <td colspan="8" style="color:var(--muted);padding:20px;text-align:center;">
-                No networks scanned yet. Click "Scan Nearby Networks" to start.
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Channel Charts (collapsible) -->
+    <details style="margin-bottom:20px;">
+      <summary style="cursor:pointer;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted2);padding:10px 0;user-select:none;list-style:none;display:flex;align-items:center;gap:8px;">
+        <span>▶</span> Channel Congestion Charts
+      </summary>
+      <div class="charts-grid" style="margin-top:12px;">
+        <div class="chart-card">
+          <div class="chart-title"><span class="chart-dot" style="background:var(--teal)"></span>2.4 GHz Channel Congestion</div>
+          <canvas id="channel-24-chart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title"><span class="chart-dot" style="background:var(--purple)"></span>5 GHz Channel Congestion</div>
+          <canvas id="channel-5-chart"></canvas>
+        </div>
       </div>
-    </div>
+    </details>
+
+    <!-- Channel Optimizer Advice (hidden) -->
+    <div id="scanner-recs" style="display:none;"></div>
+
   </div><!-- /view-scanner -->
+
+<!-- Password Modal -->
+<div class="pw-overlay" id="pw-overlay">
+  <div class="pw-modal">
+    <div class="pw-title">🔐 Connect to Network</div>
+    <div class="pw-sub" id="pw-ssid-label">Enter password for the network</div>
+    <input type="password" class="pw-input" id="pw-input" placeholder="Wi-Fi Password (leave blank if open)">
+    <div class="pw-btns">
+      <button class="btn btn-ghost" id="pw-cancel" style="flex:1;">Cancel</button>
+      <button class="btn btn-teal" id="pw-connect" style="flex:1;">⚡ Connect</button>
+    </div>
+  </div>
+</div>
 
 </div><!-- /main -->
 
@@ -892,79 +958,255 @@ const ch5Chart = new Chart(document.getElementById("channel-5-chart"), {
   }
 });
 
-// ── Wi-Fi Scan Execution ──────────────────────────────────────────────────────
-const btnScan = document.getElementById("btn-scan-wifi");
+
+// ── Wi-Fi Recommendation Engine ───────────────────────────────────────────────
+const btnScan   = document.getElementById("btn-scan-wifi");
 const scanStatus = document.getElementById("scan-status-text");
 
-function signalBarHtml(sig) {
-  const color = sig >= 75 ? "var(--green)" : sig >= 50 ? "var(--yellow)" : "var(--red)";
+let _pendingConnectSSID = "";
+
+// Score a network 0-100 based on signal, band, security, and max rate
+function scoreNetwork(n) {
+  let score = 0;
+  // Signal (0-50 pts)
+  score += Math.round((n.signal / 100) * 50);
+  // Band bonus: 5 GHz = +20, 2.4 GHz = +10 (better wall penetration)
+  if (n.band === "5 GHz") score += 20;
+  else if (n.band === "2.4 GHz") score += 10;
+  // Security (+15 for WPA2/WPA3, +5 for WPA, 0 for Open)
+  const sec = (n.security || "").toUpperCase();
+  if (sec.includes("WPA3") || sec.includes("WPA2")) score += 15;
+  else if (sec.includes("WPA")) score += 8;
+  // Max rate bonus: parse Mbit/s
+  const rateMatch = (n.rate || "").match(/(\d+)/);
+  if (rateMatch) {
+    const rate = parseInt(rateMatch[1]);
+    if (rate >= 300) score += 15;
+    else if (rate >= 150) score += 10;
+    else if (rate >= 54) score += 5;
+  }
+  return Math.min(100, score);
+}
+
+function getSignalLabel(sig) {
+  if (sig >= 80) return { label: "Excellent", cls: "good" };
+  if (sig >= 60) return { label: "Good", cls: "good" };
+  if (sig >= 40) return { label: "Fair", cls: "warn" };
+  return { label: "Weak", cls: "bad" };
+}
+
+function getScoreGrade(score) {
+  if (score >= 85) return { grade: "A+", cls: "green", label: "Highly Recommended" };
+  if (score >= 70) return { grade: "A",  cls: "green", label: "Recommended" };
+  if (score >= 55) return { grade: "B",  cls: "yellow", label: "Acceptable" };
+  if (score >= 40) return { grade: "C",  cls: "yellow", label: "Weak Signal" };
+  return { grade: "F", cls: "red", label: "Poor – Avoid" };
+}
+
+function getNetworkAdvice(n, score) {
+  const tips = [];
+  if (n.signal < 40) tips.push("⚠ Very weak signal — move closer to this router");
+  if (n.signal >= 75 && n.band === "5 GHz") tips.push("✓ Strong 5 GHz signal — ideal for speed");
+  if (n.band === "2.4 GHz" && n.signal >= 60) tips.push("✓ Reliable 2.4 GHz — good for range/walls");
+  if ((n.security || "").toUpperCase() === "OPEN" || !n.security) tips.push("⚠ Open network — use a VPN if connecting");
+  if ((n.security || "").toUpperCase().includes("WPA3")) tips.push("✓ WPA3 — most secure encryption");
+  const rateMatch = (n.rate || "").match(/(\d+)/);
+  if (rateMatch && parseInt(rateMatch[1]) >= 300) tips.push("✓ High max rate — capable of fast speeds");
+  if (n.active) tips.push("🟢 You are currently connected to this network");
+  if (!tips.length) tips.push("Moderate performance — suitable for basic tasks");
+  return tips.join(" &nbsp;•&nbsp; ");
+}
+
+function buildRecCard(n, rank, score) {
+  const sigInfo   = getSignalLabel(n.signal);
+  const scoreInfo = getScoreGrade(score);
+  const isTop     = rank === 1 && !n.active;
+  const advice    = getNetworkAdvice(n, score);
+  const secUp     = (n.security || "Open").toUpperCase();
+  const isOpen    = !n.security || secUp === "OPEN" || secUp === "";
+  const bandColor = n.band === "5 GHz" ? "var(--purple)" : "var(--teal)";
+  const rateMatch = (n.rate || "").match(/(\d+)/);
+  const rateMbps  = rateMatch ? parseInt(rateMatch[1]) : 0;
+  const rateBar   = Math.min(100, (rateMbps / 600) * 100);
+
+  let rankLabel = `#${rank}`;
+  let rankCls   = "";
+  if (n.active) { rankLabel = "● Connected"; rankCls = "connected"; }
+  else if (rank === 1) { rankLabel = "🏆 Best Pick"; rankCls = "gold"; }
+
+  const connectBtnHtml = n.active
+    ? `<button class="btn-connect connected-btn" disabled>✓ Connected</button>`
+    : `<button class="btn-connect" onclick="openConnectModal('${n.ssid.replace(/'/g,"\\'")}', ${isOpen})">⚡ Connect</button>`;
+
   return `
-    <div style="display:flex;align-items:center;gap:8px;">
-      <span style="font-weight:600;min-width:30px;">${sig}%</span>
-      <div style="background:var(--card2);border:1px solid var(--border);border-radius:4px;width:80px;height:8px;overflow:hidden;">
-        <div style="background:${color};width:${sig}%;height:100%;"></div>
+  <div class="rec-card ${n.active ? 'connected-card' : isTop ? 'top-pick' : ''}">
+    <div class="rec-rank ${rankCls}">${rankLabel}</div>
+
+    <!-- Hover Tooltip -->
+    <div class="net-tooltip">
+      <div class="tt-row"><span>SSID</span><span>${n.ssid}</span></div>
+      <div class="tt-row"><span>BSSID</span><span style="font-family:monospace;font-size:10px">${n.bssid}</span></div>
+      <div class="tt-row"><span>Signal</span><span>${n.signal}% — ${sigInfo.label}</span></div>
+      <div class="tt-row"><span>Band</span><span style="color:${bandColor}">${n.band}</span></div>
+      <div class="tt-row"><span>Channel</span><span>${n.channel}</span></div>
+      <div class="tt-row"><span>Max Rate</span><span>${n.rate || "—"}</span></div>
+      <div class="tt-row"><span>Security</span><span>${n.security || "Open"}</span></div>
+      <div class="tt-row"><span>Score</span><span style="color:var(--${scoreInfo.cls === 'green' ? 'green' : scoreInfo.cls === 'yellow' ? 'yellow' : 'red'})">${score}/100</span></div>
+      <hr class="tt-divider">
+      <div class="tt-advice">${advice}</div>
+    </div>
+
+    <div class="rec-ssid">${n.ssid}</div>
+    <div class="rec-bssid">${n.bssid}</div>
+
+    <div class="rec-score-row">
+      <div class="rec-score-ring ${scoreInfo.cls}">${scoreInfo.grade}</div>
+      <div class="rec-score-info">
+        <div class="rec-score-label">${scoreInfo.label}</div>
+        <div class="rec-score-sub">Score: ${score}/100</div>
       </div>
     </div>
-  `;
+
+    <div class="rec-bars">
+      <div class="rec-bar-row">
+        <span>Signal</span>
+        <div class="rec-bar-track"><div class="rec-bar-fill" style="width:${n.signal}%;background:${n.signal>=70?'var(--green)':n.signal>=40?'var(--yellow)':'var(--red)'}"></div></div>
+        <span class="rec-bar-val">${n.signal}%</span>
+      </div>
+      <div class="rec-bar-row">
+        <span>Rate</span>
+        <div class="rec-bar-track"><div class="rec-bar-fill" style="width:${rateBar}%;background:var(--purple)"></div></div>
+        <span class="rec-bar-val">${rateMbps || "?"}M</span>
+      </div>
+    </div>
+
+    <div class="rec-tags">
+      <span class="rec-tag" style="color:${bandColor};border-color:${bandColor}44;background:${bandColor}11">${n.band}</span>
+      <span class="rec-tag ${sigInfo.cls}">${sigInfo.label}</span>
+      <span class="rec-tag ${isOpen ? 'bad' : 'good'}">${isOpen ? '🔓 Open' : '🔒 ' + (n.security || "Secured")}</span>
+      ${rateMbps >= 300 ? '<span class="rec-tag good">⚡ Fast</span>' : ''}
+      ${n.channel ? `<span class="rec-tag">Ch ${n.channel}</span>` : ''}
+    </div>
+
+    <div class="rec-actions">
+      ${connectBtnHtml}
+    </div>
+  </div>`;
+}
+
+function renderRecommendations(networks, analysis) {
+  const grid = document.getElementById("rec-grid");
+
+  if (!networks || !networks.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);">No networks found nearby.</div>`;
+    return;
+  }
+
+  // Score and sort
+  const scored = networks.map(n => ({ ...n, _score: scoreNetwork(n) }));
+  // Put active network first, then sort rest by score
+  scored.sort((a, b) => {
+    if (a.active && !b.active) return -1;
+    if (!a.active && b.active) return 1;
+    return b._score - a._score;
+  });
+
+  grid.innerHTML = scored.map((n, i) => buildRecCard(n, i + 1, n._score)).join("");
+
+  // Banner
+  const best = scored.find(n => !n.active) || scored[0];
+  const banner = document.getElementById("rec-banner");
+  banner.style.display = "flex";
+  document.getElementById("rec-banner-icon").textContent = best.active ? "🟢" : "🏆";
+  document.getElementById("rec-banner-title").textContent = best.active
+    ? `You are connected to: ${best.ssid}`
+    : `Best available: ${best.ssid}`;
+  document.getElementById("rec-banner-sub").innerHTML = getNetworkAdvice(best, best._score);
+  document.getElementById("rec-banner-score").textContent = best._score;
+
+  // Channel charts update
+  const c24 = analysis.congestion_24;
+  const sorted24 = Object.keys(c24).map(Number).sort((a, b) => a - b);
+  ch24Chart.data.labels = sorted24.map(String);
+  ch24Chart.data.datasets[0].data = sorted24.map(ch => c24[ch]);
+  ch24Chart.update();
+  const c5 = analysis.congestion_5;
+  const sorted5 = Object.keys(c5).map(Number).sort((a, b) => a - b);
+  ch5Chart.data.labels = sorted5.map(String);
+  ch5Chart.data.datasets[0].data = sorted5.map(ch => c5[ch]);
+  ch5Chart.update();
 }
 
 function triggerWifiScan() {
   btnScan.disabled = true;
-  scanStatus.textContent = "Scanning airwaves (takes a few seconds)...";
-  
+  scanStatus.textContent = "Scanning airwaves…";
   fetch("/api/wifi/scan")
     .then(r => r.json())
     .then(data => {
-      // 1. Update Recommendations Card
-      const recs = data.analysis.recommendation_summary;
-      document.getElementById("scanner-recs").innerHTML = recs;
-      
-      // 2. Update Table
-      const tbody = document.getElementById("scanner-tbody");
-      if (!data.networks || !data.networks.length) {
-        tbody.innerHTML = `<tr><td colspan="8" style="color:var(--muted);padding:20px;text-align:center;">No nearby Wi-Fi networks found.</td></tr>`;
-      } else {
-        tbody.innerHTML = data.networks.map(n => `
-          <tr class="${n.active ? 'active-wifi-row' : ''}" style="${n.active ? 'background: #10b98118;' : ''}">
-            <td>${n.active ? '🟢 Connected' : '⚪ Nearby'}</td>
-            <td style="font-weight:600;">${n.ssid}</td>
-            <td style="font-family:monospace;font-size:12px;">${n.bssid}</td>
-            <td>${signalBarHtml(n.signal)}</td>
-            <td>${n.channel}</td>
-            <td>${n.band}</td>
-            <td>${n.rate}</td>
-            <td>${n.security}</td>
-          </tr>
-        `).join("");
-      }
-      
-      // 3. Update 2.4 GHz Chart
-      const c24 = data.analysis.congestion_24;
-      const sorted24 = Object.keys(c24).map(Number).sort((a, b) => a - b);
-      ch24Chart.data.labels = sorted24.map(String);
-      ch24Chart.data.datasets[0].data = sorted24.map(ch => c24[ch]);
-      ch24Chart.update();
-      
-      // 4. Update 5 GHz Chart
-      const c5 = data.analysis.congestion_5;
-      const sorted5 = Object.keys(c5).map(Number).sort((a, b) => a - b);
-      ch5Chart.data.labels = sorted5.map(String);
-      ch5Chart.data.datasets[0].data = sorted5.map(ch => c5[ch]);
-      ch5Chart.update();
-      
-      toast("📡 Wi-Fi scan complete!", "success");
+      renderRecommendations(data.networks, data.analysis);
+      toast(`📡 Found ${data.networks.length} network(s)`, "success");
     })
-    .catch(err => {
-      console.error(err);
-      toast("❌ Failed to scan Wi-Fi networks", "error");
-    })
-    .finally(() => {
-      btnScan.disabled = false;
-      scanStatus.textContent = "Ready to scan";
-    });
+    .catch(err => { console.error(err); toast("❌ Scan failed", "error"); })
+    .finally(() => { btnScan.disabled = false; scanStatus.textContent = "Ready to scan"; });
 }
 
 btnScan.addEventListener("click", triggerWifiScan);
+
+// ── Connect Flow ──────────────────────────────────────────────────────────────
+function openConnectModal(ssid, isOpen) {
+  _pendingConnectSSID = ssid;
+  const overlay = document.getElementById("pw-overlay");
+  const label   = document.getElementById("pw-ssid-label");
+  const inp     = document.getElementById("pw-input");
+  label.textContent = isOpen ? `"${ssid}" is an open network. Connect without a password?` : `Enter password for "${ssid}"`;
+  inp.value = "";
+  overlay.classList.add("open");
+  if (!isOpen) setTimeout(() => inp.focus(), 100);
+}
+
+document.getElementById("pw-cancel").addEventListener("click", () => {
+  document.getElementById("pw-overlay").classList.remove("open");
+});
+document.getElementById("pw-overlay").addEventListener("click", e => {
+  if (e.target === document.getElementById("pw-overlay"))
+    document.getElementById("pw-overlay").classList.remove("open");
+});
+
+document.getElementById("pw-connect").addEventListener("click", async () => {
+  const ssid = _pendingConnectSSID;
+  const pw   = document.getElementById("pw-input").value.trim();
+  const btn  = document.getElementById("pw-connect");
+  btn.disabled = true;
+  btn.textContent = "Connecting…";
+  document.getElementById("pw-overlay").classList.remove("open");
+  toast(`⚡ Connecting to "${ssid}"…`, "success");
+  try {
+    const res  = await fetch("/api/wifi/connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ssid, password: pw })
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast(`✅ Connected to "${ssid}" successfully!`, "success");
+      setTimeout(triggerWifiScan, 2000);
+    } else {
+      toast(`❌ ${data.error || "Connection failed"}`, "error");
+    }
+  } catch(e) {
+    toast("❌ Network error during connect", "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "⚡ Connect";
+  }
+});
+
+// Allow Enter key in password field
+document.getElementById("pw-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("pw-connect").click();
+});
+
+
 
 // ── Advisor & Simulation Sandbox Logic ────────────────────────────────────────
 function getHealthInsights(sig) {
